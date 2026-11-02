@@ -1,0 +1,22 @@
+{
+  "name": "startuptn-erp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "StartupTN staff ERP — Phase 1: attendance & GPS, leave, OD and approvals, employee dashboard and records",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "db:migrate": "npm run db:migrate --workspace apps/api",
+    "db:seed": "npm run db:seed --workspace apps/api",
+    "db:first-admin": "npm run db:first-admin --workspace apps/api --",
+    "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "test": "npm run test --workspace apps/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
