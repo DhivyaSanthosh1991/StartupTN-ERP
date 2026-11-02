@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Public Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+
+  /* Paper and ink: a faintly blue-grey paper, a deep navy ink instead of black. */
+  --color-paper: #f3f5f8;
+  --color-surface: #ffffff;
+  --color-ink: #172033;
+  --color-muted: #566275;
+  --color-line: #d9dee6;
+  --color-wash: #ecf0f5;
+
+  /* Peacock (the name is kept; the colour is blue): the one brand colour. Used for primary actions, "present" and links.
+     White on it is 7.5:1, and it is 6.1:1 on its own tint. */
+  --color-peacock: #1b4fb3;
+  --color-peacock-dark: #123a8a;
+  --color-peacock-tint: #dfe9fa;
+
+  /* Marigold: things waiting on someone or needing a look. */
+  --color-marigold: #e39b12;
+  --color-marigold-tint: #fbefd2;
+  --color-marigold-ink: #6b4500;
+
+  /* Kumkum: refusals, absences and errors. */
+  --color-kumkum: #b4372a;
+  --color-kumkum-tint: #fae5e1;
+
+  /* Indigo (now a violet, so it cannot be mistaken for the blue brand colour): time away that was agreed in advance (leave, on duty). */
+  --color-indigo: #6a4aa5;
+  --color-indigo-tint: #ece6f6;
+}
+
+html {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { text-wrap: balance; }
+
+:focus-visible {
+  outline: 2px solid var(--color-peacock);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection { background: var(--color-peacock-tint); }
+
+dialog::backdrop { background: rgb(23 32 51 / 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+dialog[open] { animation: sheet-in 0.16s ease-out; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot { animation: pulse-dot 2s ease-in-out infinite; }
