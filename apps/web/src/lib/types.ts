@@ -89,7 +89,7 @@ export interface DocumentView {
 
 export interface LeaveRequest {
   id: string; employeeId: string; employeeName: string; empCode: string; leaveTypeId: string; leaveTypeCode: string; leaveTypeName: string;
-  fromDate: string; toDate: string; dayPart: 'full' | 'first_half' | 'second_half'; days: number; reason: string; status: string;
+  fromDate: string; toDate: string; dayPart: 'full' | 'first_half' | 'second_half'; days: number; lopDays: number; reason: string; status: string;
   approvalRequestId: string | null; currentApprover: string | null; lastComment: string | null; createdAt: string;
 }
 

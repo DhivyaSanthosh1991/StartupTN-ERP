@@ -98,16 +98,41 @@ describe('StartupTN leave policy', () => {
     expect(await balanceOf(priya, 'CL')).toMatchObject({ carriedOver: 18, balance: 20.5 });
   });
 
-  it('does not let last year\'s balance cover leave taken after it has lapsed', async () => {
+  it('does not let last year\'s balance cover leave taken after it has lapsed: the extra days are loss of pay', async () => {
     setToday('2026-06-20T06:00:00Z');
     await env.db.query(
       `insert into leave_ledger (employee_id, leave_type_id, year, entry_type, days, note) values ($1,$2,2025,'adjustment',3,'brought forward')`,
       [env.ids.priya, await typeIdSql('CL')]);
+    await env.db.query('update approval_workflow_steps set min_days = 99 where min_days = 5');
     const priya = await env.as('priya');
-    // 2026 so far: April to June = 3.75 days. Ten days in July must not borrow from last year.
+    // 2026 so far: April to June = 3.75 days, plus 2 days in advance = 5.75. Ten days in July: 4.25 are loss of pay.
     const res = await applyLeave(priya, 'CL', '2026-07-06', '2026-07-17');
-    expect(res.status).toBe(409);
-    expect(res.body.code ?? res.body.error?.code).toBe('INSUFFICIENT_BALANCE');
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ days: 10, lopDays: 4.25 });
+    await decide(await env.as('mani'), res.body.approvalRequestId, 'approve');
+    const debits = (await ledger(env.ids.priya, 'CL')).filter((l) => l.entry_type === 'debit');
+    expect(debits.map((d) => [d.year, d.days])).toEqual([[2026, -5.75]]);
+    expect(await balanceOf(priya, 'CL')).toMatchObject({ carriedOver: 18, balance: 16 }); // last year's 18 is still usable today (20 June), it just cannot cover July
+  });
+
+  it('pays advance leave back from the next credits before anything builds up', async () => {
+    setToday('2026-04-02T06:00:00Z');
+    const priya = await env.as('priya');
+    // April has credited 1.25. Taking 3 days now is 1.75 days in advance, within the 2 allowed.
+    const res = await applyLeave(priya, 'CL', '2026-04-06', '2026-04-08');
+    expect(res.body).toMatchObject({ days: 3, lopDays: 0 });
+    await env.db.query('update approval_workflow_steps set min_days = 99 where min_days = 5');
+    await decide(await env.as('mani'), res.body.approvalRequestId, 'approve');
+    expect(await balanceOf(priya, 'CL')).toMatchObject({ balance: -1.75 });
+    setToday('2026-05-04T06:00:00Z'); // May's 1.25 pays back part of it (signing in again: the clock moved)
+    expect(await balanceOf(await env.as('priya'), 'CL')).toMatchObject({ balance: -0.5 });
+    setToday('2026-06-01T06:00:00Z');
+    expect(await balanceOf(await env.as('priya'), 'CL')).toMatchObject({ balance: 0.75 });
+  });
+
+  it('switches off earned, sick and loss-of-pay leave', async () => {
+    const codes = ((await (await env.as('priya')).get('/api/leave/types')).body as any[]).map((t) => t.code);
+    expect(codes).toEqual(['CL']);
   });
 
   describe('maternity and paternity', () => {

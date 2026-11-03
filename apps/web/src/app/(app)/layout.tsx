@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Icon, IconName } from '@/components/icons';
 import { Avatar, Loading, cx } from '@/components/ui';
 import { api } from '@/lib/api';
+import { LOGO_SIZE, LOGO_SRC } from '@/lib/logo';
 import { Role, useSession } from '@/lib/session';
 
 interface NavItem { href: string; label: string; icon: IconName; roles?: Role[] }
@@ -99,8 +100,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh md:grid md:grid-cols-[250px_1fr]">
       <aside className="hidden border-r border-line bg-surface md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
         <div className="px-5 pb-4 pt-6">
-          <Link href="/" className="font-display text-2xl font-semibold tracking-tight">StartupTN<span className="text-marigold">.</span></Link>
-          <p className="text-xs text-muted">Staff portal</p>
+          <Link href="/" aria-label="StartupTN home" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={LOGO_SRC} alt="StartupTN" width={LOGO_SIZE.width} height={LOGO_SIZE.height} className="h-auto w-44" />
+          </Link>
+          <p className="mt-1 text-xs text-muted">Staff portal</p>
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-4">{navigation}</div>
         <div className="flex items-center gap-3 border-t border-line p-4">
@@ -118,7 +122,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface/95 px-4 py-3 backdrop-blur md:hidden">
-          <Link href="/" className="font-display text-xl font-semibold">StartupTN<span className="text-marigold">.</span></Link>
+          <Link href="/" aria-label="StartupTN home" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={LOGO_SRC} alt="StartupTN" width={LOGO_SIZE.width} height={LOGO_SIZE.height} className="h-8 w-auto" />
+          </Link>
           <button type="button" onClick={() => setMenu(true)} aria-label="Open menu" className="-mr-2 rounded-lg p-2 hover:bg-wash"><Icon name="menu" /></button>
         </header>
 

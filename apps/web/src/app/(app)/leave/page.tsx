@@ -11,7 +11,7 @@ import { DAY_PART } from '@/lib/labels';
 import { useSession } from '@/lib/session';
 import type { LeaveBalance, LeaveRequest } from '@/lib/types';
 
-interface LeaveType { id: string; code: string; name: string; allowHalfDay: boolean; paid: boolean; requiresDocumentAfterDays: number | null }
+interface LeaveType { id: string; code: string; name: string; allowHalfDay: boolean; paid: boolean; requiresDocumentAfterDays: number | null; advanceDays: number; lopWhenExhausted: boolean }
 
 export default function LeavePage() {
   const { oversees } = useSession();
@@ -72,7 +72,7 @@ function MyRequests({ list, onChanged }: { list: ReturnType<typeof useApi<LeaveR
     <Panel>
       <ul className="divide-y divide-line">
         {list.data.map((r) => (
-          <RequestRow key={r.id} title={`${r.leaveTypeName} · ${fmtDays(r.days)}`}
+          <RequestRow key={r.id} title={`${r.leaveTypeName} · ${fmtDays(r.days)}${r.lopDays > 0 ? ` (${fmtDays(r.lopDays)} loss of pay)` : ''}`}
             meta={`${fmtRange(r.fromDate, r.toDate)}${r.dayPart !== 'full' ? `, ${DAY_PART[r.dayPart].toLowerCase()}` : ''} · ${r.reason}`}
             status={r.status} approver={r.currentApprover} comment={r.lastComment}
             onOpen={r.approvalRequestId ? () => setTrail(r.approvalRequestId) : undefined}
@@ -123,7 +123,7 @@ function ApplyDialog({ open, balances, onClose, onDone }: { open: boolean; balan
     <Dialog open={open} onClose={onClose} title="Apply for leave">
       {types.loading && !types.data ? <Loading /> : (
         <form onSubmit={submit} className="space-y-4">
-          <Field label="Type of leave" hint={balance && !balance.unlimited ? `${balance.available} available${balance.pending ? `, ${balance.pending} more waiting for approval` : ''}` : type && !type.paid ? 'Unpaid leave has no limit.' : undefined}>
+          <Field label="Type of leave" hint={balance && !balance.unlimited && !balance.event ? `${balance.available < 0 ? `${-balance.available} taken in advance` : `${balance.available} available`}${balance.pending ? `, ${balance.pending} more waiting for approval` : ''}${type?.lopWhenExhausted ? `. Up to ${type.advanceDays} days can be taken in advance; any days beyond that are loss of pay` : ''}.` : balance?.event ? `Up to ${balance.entitlement} days at a time.` : type && !type.paid ? 'Unpaid leave has no limit.' : undefined}>
             <Select required value={form.leaveTypeId} onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value, dayPart: 'full' })}>
               <option value="" disabled>Choose…</option>
               {types.data?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -172,7 +172,7 @@ function TeamLeave() {
       {list.data && list.data.length > 0 && (
         <Panel><ul className="divide-y divide-line">
           {list.data.map((r) => (
-            <RequestRow key={r.id} who={r.employeeName} title={`${r.leaveTypeName} · ${fmtDays(r.days)}`}
+            <RequestRow key={r.id} who={r.employeeName} title={`${r.leaveTypeName} · ${fmtDays(r.days)}${r.lopDays > 0 ? ` (${fmtDays(r.lopDays)} loss of pay)` : ''}`}
               meta={`${fmtRange(r.fromDate, r.toDate)}${r.dayPart !== 'full' ? `, ${DAY_PART[r.dayPart].toLowerCase()}` : ''} · ${r.reason}`}
               status={r.status} approver={r.currentApprover} comment={r.lastComment}
               onOpen={r.approvalRequestId ? () => setTrail(r.approvalRequestId) : undefined} />

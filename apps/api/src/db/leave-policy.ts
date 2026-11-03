@@ -10,7 +10,7 @@ interface Row {
   code: string; name: string; days: number; accrual: 'upfront' | 'monthly' | 'event'; carryMax: number; half: boolean;
   types: string[]; sort: number;
   carryMode?: 'cap' | 'rolling'; validMonths?: number; only?: string[] | null; except?: string[] | null; gender?: 'female' | 'male' | null;
-  maxTimes?: number | null; minService?: number | null; calendar?: boolean; doc?: number | null;
+  advance?: number; lop?: boolean; maxTimes?: number | null; minService?: number | null; calendar?: boolean; doc?: number | null;
 }
 
 const BOTH = ['permanent', 'contract'];
@@ -18,10 +18,10 @@ const BOTH = ['permanent', 'contract'];
 export const POLICY: Row[] = [
   // 1.25 days a month from April; last year's balance is used first and lapses on 30 June.
   { code: 'CL', name: 'Casual Leave', days: 15, accrual: 'monthly', carryMax: 15, half: true, types: BOTH, sort: 1,
-    carryMode: 'rolling', validMonths: 3, except: ADMIN_TITLES },
+    carryMode: 'rolling', validMonths: 3, except: ADMIN_TITLES, advance: 2, lop: true },
   // 1 day a month for administrative staff; carried forward, lapses at the end of the year (31 March).
   { code: 'AL', name: 'Leave (Administrative staff)', days: 12, accrual: 'monthly', carryMax: 12, half: true, types: BOTH, sort: 2,
-    carryMode: 'rolling', validMonths: 0, only: ADMIN_TITLES },
+    carryMode: 'rolling', validMonths: 0, only: ADMIN_TITLES, advance: 2, lop: true },
   // Maternity and Paternity Policy: 12 weeks fully paid, 4 weeks for a miscarriage, 15 days paternity.
   { code: 'ML', name: 'Maternity Leave', days: 84, accrual: 'event', carryMax: 0, half: false, types: BOTH, sort: 5,
     gender: 'female', maxTimes: 2, minService: 80, calendar: true, doc: 0 },
@@ -53,8 +53,8 @@ export async function applyLeavePolicy(q: Queryable, opts: { force?: boolean } =
       `insert into leave_types (code, name, annual_entitlement, accrual, carry_forward_max, allow_half_day, paid,
                                 applicable_employment_types, requires_document_after_days, active, sort_order,
                                 carry_mode, carry_valid_months, only_designations, except_designations, only_gender,
-                                max_times, min_service_days, count_calendar_days)
-       values ($1,$2,$3,$4,$5,$6,true,$7,$8,true,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+                                max_times, min_service_days, count_calendar_days, advance_days, lop_when_exhausted)
+       values ($1,$2,$3,$4,$5,$6,true,$7,$8,true,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        on conflict (code) do update set
          name = excluded.name, annual_entitlement = excluded.annual_entitlement, accrual = excluded.accrual,
          carry_forward_max = excluded.carry_forward_max, allow_half_day = excluded.allow_half_day,
@@ -63,9 +63,13 @@ export async function applyLeavePolicy(q: Queryable, opts: { force?: boolean } =
          carry_mode = excluded.carry_mode, carry_valid_months = excluded.carry_valid_months,
          only_designations = excluded.only_designations, except_designations = excluded.except_designations,
          only_gender = excluded.only_gender, max_times = excluded.max_times, min_service_days = excluded.min_service_days,
-         count_calendar_days = excluded.count_calendar_days`,
+         count_calendar_days = excluded.count_calendar_days,
+         advance_days = excluded.advance_days, lop_when_exhausted = excluded.lop_when_exhausted`,
       [r.code, r.name, r.days, r.accrual, r.carryMax, r.half, r.types, r.doc ?? null, r.sort,
        r.carryMode ?? 'cap', r.validMonths ?? 0, r.only ?? null, r.except ?? null, r.gender ?? null,
-       r.maxTimes ?? null, r.minService ?? null, r.calendar ?? false]);
+       r.maxTimes ?? null, r.minService ?? null, r.calendar ?? false, r.advance ?? 0, r.lop ?? false]);
   }
+
+  // Earned, sick and loss-of-pay leave are not used: loss of pay is worked out automatically on casual leave.
+  await q.query(`update leave_types set active = false where code in ('EL','SL','LOP')`);
 }

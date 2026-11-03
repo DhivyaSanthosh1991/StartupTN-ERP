@@ -9,7 +9,7 @@ export function BalanceRow({ b }: { b: LeaveBalance }) {
         <span className="font-medium">{b.name}</span>
         {b.unlimited
           ? <span className="text-sm text-muted">Unpaid · {b.used > 0 ? `${b.used} taken` : 'no limit'}</span>
-          : <span><span className="font-display text-xl font-semibold">{b.available}</span><span className="text-sm text-muted"> available</span></span>}
+          : <span><span className="font-display text-xl font-semibold">{b.available < 0 ? -b.available : b.available}</span><span className="text-sm text-muted">{b.available < 0 ? ' taken in advance' : ' available'}</span></span>}
       </div>
       {!b.unlimited && (
         <>

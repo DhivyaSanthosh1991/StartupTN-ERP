@@ -286,7 +286,7 @@ export class LeaveService implements OnModuleInit {
         where employee_id = $1 and year in ($2, $3) group by 1, 2, 3`,
       [employeeId, year, year - 1])).rows.map((l) => ({ ...l, days: Number(l.days) }));
     const pending = (await q.query(
-      `select leave_type_id, from_date, days from leave_requests where employee_id = $1 and status = 'pending' and from_date between $2 and $3`,
+      `select leave_type_id, from_date, (days - lop_days) as days from leave_requests where employee_id = $1 and status = 'pending' and from_date between $2 and $3`,
       [employeeId, prevStart, end])).rows;
     const events = (await q.query(
       `select leave_type_id, count(*) filter (where status in ('approved','pending')) as times,
@@ -313,6 +313,7 @@ export class LeaveService implements OnModuleInit {
         const expiry = rollingExpiry(year - 1, s.leave_year_start_month, t.carry_valid_months);
         const prior = round2(ledger.filter((l) => l.leave_type_id === t.id && l.year === year - 1).reduce((n, l) => n + l.days, 0));
         if (prior > 0 && onDate <= expiry) { carried = prior; carriedUntil = expiry; }
+        else if (prior < 0) carried = prior; // leave taken in advance is paid back from the new year's credits
       }
       const held = round2(pending
         .filter((p) => p.leave_type_id === t.id && (t.carry_mode === 'rolling' || String(p.from_date) >= start))
@@ -391,6 +392,7 @@ export class LeaveService implements OnModuleInit {
     });
     if (days === 0) throw badRequest('NO_WORKING_DAYS', 'Those dates are all holidays or weekly offs, so no leave is needed');
 
+    let lopDays = 0;
     const id = await this.db.tx(async (q) => {
       await q.query('select pg_advisory_xact_lock(hashtext($1))', [`leave-apply:${user.id}`]);
 
@@ -422,24 +424,30 @@ export class LeaveService implements OnModuleInit {
       } else if (type.paid) {
         await this.ensureEntitlements(q, user.id, year);
         const bal = (await this.computeBalances(q, user.id, year, input.fromDate)).find((b) => b.leaveTypeId === type.id);
-        if (!bal || bal.available < days) {
-          throw conflict('INSUFFICIENT_BALANCE',
-            `Not enough ${type.name}: ${days} day(s) requested, ${bal?.available ?? 0} available`,
-            { requested: days, available: bal?.available ?? 0 });
+        // What can be taken: the balance plus the advance HR allows. Beyond that the days are loss of
+        // pay where the type says so, otherwise the request is refused.
+        const allowed = Math.max(round2((bal?.available ?? 0) + Number(type.advance_days ?? 0)), 0);
+        if (days > allowed) {
+          if (!type.lop_when_exhausted) {
+            throw conflict('INSUFFICIENT_BALANCE',
+              `Not enough ${type.name}: ${days} day(s) requested, ${bal?.available ?? 0} available`,
+              { requested: days, available: bal?.available ?? 0 });
+          }
+          lopDays = round2(days - allowed);
         }
       }
 
       const req = (await q.query(
-        `insert into leave_requests (employee_id, leave_type_id, from_date, to_date, day_part, days, reason)
-         values ($1,$2,$3,$4,$5,$6,$7) returning id`,
-        [user.id, type.id, input.fromDate, input.toDate, input.dayPart, days, input.reason])).rows[0];
+        `insert into leave_requests (employee_id, leave_type_id, from_date, to_date, day_part, days, lop_days, reason)
+         values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
+        [user.id, type.id, input.fromDate, input.toDate, input.dayPart, days, lopDays, input.reason])).rows[0];
 
       const summary = `${type.name}: ${prettyDate(input.fromDate)}${input.toDate !== input.fromDate ? ` to ${prettyDate(input.toDate)}` : ''}` +
-        ` (${days} day${days === 1 ? '' : 's'}${input.dayPart !== 'full' ? `, ${input.dayPart === 'first_half' ? 'first' : 'second'} half` : ''}) — ${user.fullName}`;
+        ` (${days} day${days === 1 ? '' : 's'}${lopDays > 0 ? `, ${lopDays} of them loss of pay` : ''}${input.dayPart !== 'full' ? `, ${input.dayPart === 'first_half' ? 'first' : 'second'} half` : ''}) — ${user.fullName}`;
       const approvalId = await this.approvals.submit(q, { type: 'leave', refId: req.id, requesterId: user.id, summary, size: days });
       await q.query('update leave_requests set approval_request_id = $2 where id = $1', [req.id, approvalId]);
       await this.audit.record({ actorId: user.id, action: 'leave.apply', entityType: 'leave_request', entityId: req.id,
-        after: { ...input, days } }, q);
+        after: { ...input, days, lopDays } }, q);
       return req.id as string;
     });
     return this.getOne(id);
@@ -506,7 +514,7 @@ export class LeaveService implements OnModuleInit {
         `insert into leave_ledger (employee_id, leave_type_id, year, entry_type, days, ref_type, ref_id, note)
          values ($1,$2,$3,'debit',$4,'leave_request',$5,$6)`,
         [row.employee_id, row.leave_type_id, y, -days, row.id, note]);
-      let rest = Number(row.days);
+      let rest = round2(Number(row.days) - Number(row.lop_days ?? 0)); // loss-of-pay days take nothing from any balance
       if (type.carry_mode === 'rolling') {
         // Last year's balance is used first, as long as the leave falls within its usable window.
         await this.ensureEntitlements(q, row.employee_id, year);
@@ -590,7 +598,7 @@ export class LeaveService implements OnModuleInit {
       return {
         id: r.id as string, employeeId: r.employee_id as string, employeeName: r.employee_name as string, empCode: r.emp_code as string,
         leaveTypeId: r.leave_type_id as string, leaveTypeCode: r.leave_type_code as string, leaveTypeName: r.leave_type_name as string,
-        fromDate: r.from_date as string, toDate: r.to_date as string, dayPart: r.day_part as DayPart, days: r.days as number,
+        fromDate: r.from_date as string, toDate: r.to_date as string, dayPart: r.day_part as DayPart, days: r.days as number, lopDays: Number(r.lop_days ?? 0),
         reason: r.reason as string, status: r.status as string, approvalRequestId: r.approval_request_id as string | null,
         currentApprover: a?.currentApprover ?? null, lastComment: a?.lastComment ?? null, createdAt: r.created_at as Date,
       };
@@ -613,6 +621,7 @@ function typeView(t: any) {
     onlyDesignations: (t.only_designations ?? null) as string[] | null, exceptDesignations: (t.except_designations ?? null) as string[] | null,
     onlyGender: (t.only_gender ?? null) as string | null, maxTimes: (t.max_times ?? null) as number | null,
     minServiceDays: (t.min_service_days ?? null) as number | null, countCalendarDays: !!t.count_calendar_days,
+    advanceDays: Number(t.advance_days ?? 0), lopWhenExhausted: !!t.lop_when_exhausted,
   };
 }
 
