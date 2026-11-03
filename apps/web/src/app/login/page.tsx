@@ -25,11 +25,18 @@ interface AuthConfig { googleClientId: string; allowedDomain: string; devLogin: 
 export default function LoginPage() {
   const router = useRouter();
   const { me, loading, refresh } = useSession();
-  const { data: config, error: configError } = useApi<AuthConfig>('/auth/config');
+  const { data: config, error: configError, reload } = useApi<AuthConfig>('/auth/config');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState('');
   const button = useRef<HTMLDivElement>(null);
+
+  // The free server sleeps when idle and takes up to a minute to wake: keep trying quietly.
+  useEffect(() => {
+    if (!configError) return;
+    const t = setTimeout(() => void reload(), 5000);
+    return () => clearTimeout(t);
+  }, [configError, reload]);
 
   useEffect(() => {
     if (!loading && me) router.replace('/');
@@ -76,8 +83,6 @@ export default function LoginPage() {
       <div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={LOGO_SRC} alt="Government of Tamil Nadu emblem and StartupTN logo" width={LOGO_SIZE.width} height={LOGO_SIZE.height} className="h-auto w-72 max-w-full md:w-96" />
-        <h1 className="mt-8 font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">Check in, apply for leave, get approvals done.</h1>
-        <p className="mt-4 max-w-md text-muted">The staff portal for attendance, leave, on-duty requests and your employee records.</p>
       </div>
 
       <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
@@ -85,7 +90,7 @@ export default function LoginPage() {
         <p className="mt-1 text-sm text-muted">{googleReady || !config?.devLogin ? <>Use your {config ? `@${config.allowedDomain}` : 'work'} Google account.</> : <>Enter your @{config.allowedDomain} work email.</>}</p>
 
         <div className="mt-5 space-y-4">
-          {configError && <Notice tone="kumkum">The portal could not reach its server. Check your connection and reload.</Notice>}
+          {configError && <Notice tone="marigold">The portal is waking up. This can take up to a minute, and it will keep trying.</Notice>}
           {googleReady && <div ref={button} className={cx('min-h-11', busy && 'pointer-events-none opacity-50')} />}
           {config && !googleReady && !config.devLogin && <Notice tone="marigold">Google sign-in is not set up yet. Ask the administrator to add the Google client ID.</Notice>}
           {error && <Notice tone="kumkum">{error}</Notice>}
