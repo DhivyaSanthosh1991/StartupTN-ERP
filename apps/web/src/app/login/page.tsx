@@ -75,7 +75,8 @@ export default function LoginPage() {
   return (
     <main className="mx-auto grid min-h-dvh max-w-5xl items-center gap-10 px-5 py-10 md:grid-cols-[1.1fr_1fr]">
       <div>
-        <p className="font-display text-3xl font-semibold tracking-tight">StartupTN<span className="text-marigold">.</span></p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/startuptn-logo.png" alt="Government of Tamil Nadu emblem and StartupTN logo" width={1200} height={321} className="h-auto w-72 max-w-full md:w-96" />
         <h1 className="mt-8 font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">Check in, apply for leave, get approvals done.</h1>
         <p className="mt-4 max-w-md text-muted">The staff portal for attendance, leave, on-duty requests and your employee records.</p>
       </div>
