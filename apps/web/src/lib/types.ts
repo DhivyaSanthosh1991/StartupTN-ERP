@@ -60,6 +60,7 @@ export interface MonthDay extends DayView {
 export interface LeaveBalance {
   leaveTypeId: string; code: string; name: string; paid: boolean; allowHalfDay: boolean; unlimited: boolean;
   entitlement: number; used: number; pending: number; balance: number; available: number; year: number;
+  event?: boolean; carriedOver?: number; carriedOverUntil?: string | null;
 }
 
 export interface Dashboard {
@@ -112,7 +113,7 @@ export interface DirectoryPerson {
 
 export interface EmployeeProfile extends DirectoryPerson {
   phone: string | null; employmentType: 'permanent' | 'contract' | 'consultant' | 'intern'; dateOfJoining: string | null;
-  dateOfBirth: string | null; reportingManagerName: string | null; status: 'active' | 'inactive' | 'exited'; exitDate: string | null;
+  dateOfBirth: string | null; gender: 'female' | 'male' | 'other' | null; reportingManagerName: string | null; status: 'active' | 'inactive' | 'exited'; exitDate: string | null;
   locationConsentAt: string | null; photoConsentAt: string | null; attendanceMethod: 'selfie' | 'biometric'; biometricCode: string | null; roles: string[]; directReports: number; isManager: boolean;
 }
 

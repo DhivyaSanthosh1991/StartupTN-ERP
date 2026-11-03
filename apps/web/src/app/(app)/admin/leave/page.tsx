@@ -8,7 +8,7 @@ import { todayIst } from '@/lib/dates';
 import type { DirectoryPerson } from '@/lib/types';
 
 interface LeaveType {
-  id: string; code: string; name: string; annualEntitlement: number; accrual: 'upfront' | 'monthly'; carryForwardMax: number; allowHalfDay: boolean;
+  id: string; code: string; name: string; annualEntitlement: number; accrual: 'upfront' | 'monthly' | 'event'; carryForwardMax: number; allowHalfDay: boolean;
   paid: boolean; applicableEmploymentTypes: string[]; requiresDocumentAfterDays: number | null; active: boolean; sortOrder: number;
 }
 
@@ -36,7 +36,7 @@ export default function AdminLeavePage() {
                 <td className={td}><span className="font-medium">{t.name}</span> <span className="text-xs text-muted">{t.code}</span>
                   <span className="mt-0.5 flex gap-1">{!t.paid && <Badge>Unpaid</Badge>}{!t.active && <Badge tone="kumkum">Switched off</Badge>}{t.allowHalfDay && <Badge>Half days</Badge>}</span></td>
                 <td className={td}>{t.paid ? t.annualEntitlement : 'No limit'}</td>
-                <td className={td}>{t.accrual === 'monthly' ? 'Month by month' : 'All at the start'}</td>
+                <td className={td}>{t.accrual === 'monthly' ? 'Month by month' : t.accrual === 'event' ? 'Per event' : 'All at the start'}</td>
                 <td className={td}>{t.carryForwardMax > 0 ? `Up to ${t.carryForwardMax}` : 'None'}</td>
                 <td className={td}>{t.applicableEmploymentTypes.map((e) => EMPLOYMENT_TYPE[e]).join(', ')}</td>
                 <td className={td}><Button size="sm" variant="secondary" onClick={() => setEditing(t)}>Edit</Button></td>
@@ -104,7 +104,7 @@ function TypeDialog({ target, onClose, onDone }: { target: LeaveType | 'new' | n
           <Field label="Days per year"><Input type="number" min={0} max={365} step={0.5} value={form.annualEntitlement} onChange={(e) => set({ annualEntitlement: e.target.value })} disabled={!form.paid} /></Field>
           <Field label="How it is given">
             <Select value={form.accrual} onChange={(e) => set({ accrual: e.target.value })}>
-              <option value="upfront">All at the start of the year</option><option value="monthly">A little each month</option>
+              <option value="upfront">All at the start of the year</option><option value="monthly">A little each month</option><option value="event">Per event (maternity, paternity)</option>
             </Select>
           </Field>
           <Field label="Carry forward at most" hint="Days left over that move into next year."><Input type="number" min={0} max={365} step={0.5} value={form.carryForwardMax} onChange={(e) => set({ carryForwardMax: e.target.value })} /></Field>

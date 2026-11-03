@@ -17,8 +17,11 @@ export function BalanceRow({ b }: { b: LeaveBalance }) {
             <div className="h-full rounded-full bg-peacock" style={{ width: `${share * 100}%` }} />
           </div>
           <p className="mt-1.5 text-xs text-muted">
-            {b.used} used{b.pending > 0 ? `, ${b.pending} waiting for approval` : ''} · {b.entitlement} this year
+            {b.event ? `${b.used} taken · up to ${b.entitlement} days at a time` : `${b.used} used${b.pending > 0 ? `, ${b.pending} waiting for approval` : ''} · ${b.entitlement} this year`}
           </p>
+          {!!b.carriedOver && b.carriedOverUntil && (
+            <p className="mt-0.5 text-xs text-muted">Includes {b.carriedOver} from last year, used first, until {new Date(`${b.carriedOverUntil}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.</p>
+          )}
         </>
       )}
     </div>

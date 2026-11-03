@@ -25,7 +25,7 @@ const typeBody = z.object({
   code: z.string().trim().min(1).max(10).regex(/^[A-Za-z0-9_]+$/, 'Letters, digits and _ only'),
   name: z.string().trim().min(1).max(60),
   annualEntitlement: z.number().min(0).max(365),
-  accrual: z.enum(['upfront', 'monthly']),
+  accrual: z.enum(['upfront', 'monthly', 'event']),
   carryForwardMax: z.number().min(0).max(365).default(0),
   allowHalfDay: z.boolean().default(true),
   paid: z.boolean().default(true),

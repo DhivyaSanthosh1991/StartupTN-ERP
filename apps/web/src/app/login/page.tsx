@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, Notice, cx } from '@/components/ui';
 import { api, errorText, useApi } from '@/lib/api';
-import { LOGO_SIZE, LOGO_SRC } from '@/lib/logo';
 import { useSession } from '@/lib/session';
 
 declare global {
@@ -22,21 +21,16 @@ declare global {
 
 interface AuthConfig { googleClientId: string; allowedDomain: string; devLogin: boolean }
 
+const DEMO_PEOPLE = ['priya', 'ravi', 'mani', 'hari', 'hema', 'meena', 'sathya'];
+
 export default function LoginPage() {
   const router = useRouter();
   const { me, loading, refresh } = useSession();
-  const { data: config, error: configError, reload } = useApi<AuthConfig>('/auth/config');
+  const { data: config, error: configError } = useApi<AuthConfig>('/auth/config');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState('');
   const button = useRef<HTMLDivElement>(null);
-
-  // The free server sleeps when idle and takes up to a minute to wake: keep trying quietly.
-  useEffect(() => {
-    if (!configError) return;
-    const t = setTimeout(() => void reload(), 5000);
-    return () => clearTimeout(t);
-  }, [configError, reload]);
 
   useEffect(() => {
     if (!loading && me) router.replace('/');
@@ -82,15 +76,17 @@ export default function LoginPage() {
     <main className="mx-auto grid min-h-dvh max-w-5xl items-center gap-10 px-5 py-10 md:grid-cols-[1.1fr_1fr]">
       <div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO_SRC} alt="Government of Tamil Nadu emblem and StartupTN logo" width={LOGO_SIZE.width} height={LOGO_SIZE.height} className="h-auto w-72 max-w-full md:w-96" />
+        <img src="/startuptn-logo.png" alt="Government of Tamil Nadu emblem and StartupTN logo" width={1200} height={321} className="h-auto w-72 max-w-full md:w-96" />
+        <h1 className="mt-8 font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">Check in, apply for leave, get approvals done.</h1>
+        <p className="mt-4 max-w-md text-muted">The staff portal for attendance, leave, on-duty requests and your employee records.</p>
       </div>
 
       <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
         <h2 className="font-display text-2xl font-semibold">Sign in</h2>
-        <p className="mt-1 text-sm text-muted">{googleReady || !config?.devLogin ? <>Use your {config ? `@${config.allowedDomain}` : 'work'} Google account.</> : <>Enter your @{config.allowedDomain} work email.</>}</p>
+        <p className="mt-1 text-sm text-muted">Use your {config ? `@${config.allowedDomain}` : 'work'} Google account.</p>
 
         <div className="mt-5 space-y-4">
-          {configError && <Notice tone="marigold">The portal is waking up. This can take up to a minute, and it will keep trying.</Notice>}
+          {configError && <Notice tone="kumkum">The portal could not reach its server. Check your connection and reload.</Notice>}
           {googleReady && <div ref={button} className={cx('min-h-11', busy && 'pointer-events-none opacity-50')} />}
           {config && !googleReady && !config.devLogin && <Notice tone="marigold">Google sign-in is not set up yet. Ask the administrator to add the Google client ID.</Notice>}
           {error && <Notice tone="kumkum">{error}</Notice>}
@@ -98,17 +94,23 @@ export default function LoginPage() {
 
         {config?.devLogin && (
           <form
-            className={cx('space-y-3', googleReady ? 'mt-6 border-t border-line pt-5' : 'mt-5')}
+            className="mt-6 space-y-3 border-t border-line pt-5"
             onSubmit={(e) => { e.preventDefault(); void finish('/auth/dev-login', { email: email.includes('@') ? email : `${email}@${config.allowedDomain}` }); }}
           >
-            <Field label="Work email">
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`name@${config.allowedDomain}`} autoComplete="email" required />
+            <p className="text-sm font-medium">Test sign-in <span className="font-normal text-muted">(development only)</span></p>
+            <Field label="Work email or first name">
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="priya" autoComplete="off" required />
             </Field>
-            <Button type="submit" busy={busy} className="w-full">Sign in</Button>
+            <div className="flex flex-wrap gap-1.5">
+              {DEMO_PEOPLE.map((p) => (
+                <button key={p} type="button" onClick={() => setEmail(p)} className="rounded-full border border-line px-3 py-1 text-xs hover:bg-wash">{p}</button>
+              ))}
+            </div>
+            <Button type="submit" busy={busy} className="w-full">Sign in as this person</Button>
           </form>
         )}
 
-        <p className="mt-6 text-xs text-muted">If your email is not recognised, ask HR to add you to the employee list.</p>
+        <p className="mt-6 text-xs text-muted">If you are told your account is not registered, ask HR to add you to the employee list first.</p>
       </div>
     </main>
   );

@@ -62,3 +62,19 @@ export function prorateUpfront(entitlement: number, joiningDate: string | null, 
 export function monthlyAccrual(entitlement: number, k: number): number {
   return round2(round2((entitlement * k) / 12) - round2((entitlement * (k - 1)) / 12));
 }
+
+/**
+ * Last day a rolled-over balance of leave year `year` can still be used: the end of the year plus
+ * `months` more months (April-March year, 3 months -> 30 June). With 0 months it is the year's last day.
+ */
+export function rollingExpiry(year: number, startMonth: number, months: number): string {
+  const [, last] = leaveYearBounds(year, startMonth);
+  const y = Number(last.slice(0, 4));
+  const m = Number(last.slice(5, 7));
+  return new Date(Date.UTC(y, m - 1 + months + 1, 0)).toISOString().slice(0, 10);
+}
+
+/** Whole days between two YYYY-MM-DD dates (to - from). */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}

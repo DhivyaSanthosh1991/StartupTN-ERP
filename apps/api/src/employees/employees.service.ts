@@ -14,6 +14,7 @@ export interface EmployeeInput {
   employmentType?: 'permanent' | 'contract' | 'consultant' | 'intern';
   dateOfJoining?: string | null;
   dateOfBirth?: string | null;
+  gender?: 'female' | 'male' | 'other' | null;
   reportingManagerId?: string | null;
   /** How attendance is taken: a selfie in the portal, or the biometric machine at head office. */
   attendanceMethod?: 'selfie' | 'biometric';
@@ -36,6 +37,7 @@ const COLUMN_FOR: Record<string, string> = {
   employmentType: 'employment_type',
   dateOfJoining: 'date_of_joining',
   dateOfBirth: 'date_of_birth',
+  gender: 'gender',
   reportingManagerId: 'reporting_manager_id',
   attendanceMethod: 'attendance_method',
   biometricCode: 'biometric_code',
@@ -45,7 +47,7 @@ const COLUMN_FOR: Record<string, string> = {
 
 const PROFILE_SQL = `
   select e.id, e.emp_code, e.full_name, e.official_email, e.phone, e.designation, e.department_id,
-         d.name as department_name, e.employment_type, e.date_of_joining, e.date_of_birth,
+         d.name as department_name, e.employment_type, e.date_of_joining, e.date_of_birth, e.gender,
          e.reporting_manager_id, m.full_name as reporting_manager_name, e.status, e.exit_date,
          e.photo_url, e.location_consent_at, e.photo_consent_at, e.attendance_method, e.biometric_code,
          coalesce((select array_agg(role order by role) from employee_roles r where r.employee_id = e.id), '{}') as roles,
@@ -74,6 +76,7 @@ export class EmployeesService {
       employmentType: r.employment_type,
       dateOfJoining: r.date_of_joining,
       dateOfBirth: r.date_of_birth,
+      gender: r.gender as 'female' | 'male' | 'other' | null,
       reportingManagerId: r.reporting_manager_id,
       reportingManagerName: r.reporting_manager_name,
       status: r.status,
@@ -206,8 +209,8 @@ export class EmployeesService {
         const r = await q.query(
           `insert into employees (emp_code, full_name, official_email, phone, designation, department_id,
                                   employment_type, date_of_joining, date_of_birth, reporting_manager_id,
-                                  attendance_method, biometric_code)
-           values ($1,$2,$3,$4,$5,$6,coalesce($7,'permanent'),$8,$9,$10,coalesce($11,'selfie'),$12) returning id`,
+                                  attendance_method, biometric_code, gender)
+           values ($1,$2,$3,$4,$5,$6,coalesce($7,'permanent'),$8,$9,$10,coalesce($11,'selfie'),$12,$13) returning id`,
           [
             input.empCode.trim(),
             input.fullName.trim(),
@@ -221,6 +224,7 @@ export class EmployeesService {
             input.reportingManagerId ?? null,
             input.attendanceMethod ?? null,
             input.biometricCode?.trim() || null,
+            input.gender ?? null,
           ],
         );
         await this.audit.record(
