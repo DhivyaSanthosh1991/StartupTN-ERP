@@ -38,7 +38,7 @@ Tests (they need a throw-away database; by default `postgres://postgres@127.0.0.
 `TEST_DATABASE_URL`):
 
 ```bash
-cd apps/api && npx jest
+cd apps/api && npx jest --runInBand
 ```
 
 ---
