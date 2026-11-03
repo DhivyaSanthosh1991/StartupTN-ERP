@@ -187,6 +187,26 @@ does not matter.
 
 ---
 
+## 3a. Pilot on Netlify before AWS
+
+Netlify hosts only the web app. The API (Docker, `apps/api/Dockerfile`) needs a container host such as Render,
+Railway or Fly.io, plus a PostgreSQL database (Neon, Supabase or the host's own). Documents still need an S3
+bucket, because the API refuses local storage in production. Off AWS, give the API `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` for an IAM user limited to that bucket.
+
+1. Deploy the API with the variables in section 3, step 6 (`DATABASE_SSL=verify`, `EMAIL_DRIVER=log` for a pilot,
+   `TRUST_PROXY_HOPS=1`, `WEB_ORIGIN` = the Netlify address), then run the migration and first-admin commands.
+2. In Netlify, import this repository. `netlify.toml` sets the base directory (`apps/web`) and build command.
+   Add the environment variable `API_ORIGIN=https://<api address>`; it is read at build time, so redeploy after
+   changing it.
+3. Add the Netlify address to the Google OAuth client's authorised origins and to the S3 bucket's CORS rule.
+4. Call the `/api/jobs/*` endpoints on a timer (GitHub Actions cron or cron-job.org) with the `x-jobs-token` header.
+
+Moving to AWS later changes only where things run: `DATABASE_URL` to RDS, a task role instead of access keys,
+`EMAIL_DRIVER=ses`, EventBridge for the schedules.
+
+---
+
 ## 4. Selfie, location and the biometric machine
 
 **Hubs and everyone on duty: selfie and location.** Pressing *Check in* opens the camera and reads the

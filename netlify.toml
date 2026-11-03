@@ -1,0 +1,10 @@
+# Netlify hosts only the web app (apps/web). The API and database run elsewhere (see README, section 3a).
+# Set API_ORIGIN (the API's public https address) in Netlify's environment variables; it is read at build time.
+[build]
+  base = "apps/web"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
