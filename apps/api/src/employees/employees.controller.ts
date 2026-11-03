@@ -17,6 +17,7 @@ const createBody = z.object({
   dateOfJoining: dateStr.nullish(),
   dateOfBirth: dateStr.nullish(),
   gender: z.enum(['female', 'male', 'other']).nullish(),
+  workLocationId: uuid.nullish(),
   reportingManagerId: uuid.nullish(),
   attendanceMethod: z.enum(['selfie', 'biometric']).optional(),
   biometricCode: z.string().trim().max(40).nullish(),

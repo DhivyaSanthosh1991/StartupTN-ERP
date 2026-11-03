@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 import { loadConfig } from '../config/config';
 import { loadEnvFile } from '../config/env-file';
 import { poolSsl } from './db.service';
-import { importStaff, readStaffList } from './employee-import';
+import { assignWorkLocations, importStaff, readStaffList } from './employee-import';
 
 /**
  * Replaces the fictional demo staff with the real staff list.
@@ -68,6 +68,20 @@ async function main() {
   console.log(`\nEveryone reports to the Chairman, whose sign-in address becomes ${approver}, so all approvals go there.`);
   console.log(`\n${depts.size} departments (taken from the Project Assigned column). Administrators: ${admins.join(', ')}`);
   if (flag('check')) { console.log('\n--check: nothing was changed.'); return; }
+  if (flag('assign-locations')) {
+    // Only sets each person's work location from the list. Changes nothing else, and can be run again.
+    const pool = new Pool({ connectionString: config.databaseUrl, ssl: poolSsl(config.databaseSsl) });
+    try {
+      const r = await assignWorkLocations(pool, report.people);
+      console.log(`\nWork location set for ${r.set} people.`);
+      if (r.noPlace) console.log(`${r.noPlace} people have no work location in the list.`);
+      for (const [place, n] of r.unmatchedPlaces) console.log(`No location named like "${place}" (${n} people): add it under Attendance setup, then run this again.`);
+      if (r.notFound.length) console.log(`Not found in the portal: ${r.notFound.join(', ')}`);
+    } finally {
+      await pool.end();
+    }
+    return;
+  }
 
   const pool = new Pool({ connectionString: config.databaseUrl, ssl: poolSsl(config.databaseSsl) });
   const client = await pool.connect();

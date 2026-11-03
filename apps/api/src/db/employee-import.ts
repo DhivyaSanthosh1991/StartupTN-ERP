@@ -9,6 +9,8 @@ export interface ImportedPerson {
   department: string | null;
   joined: string | null;
   phone: string | null;
+  /** The "Work location" column, such as Chennai or Madurai. */
+  workLocation: string | null;
 }
 
 export interface ImportReport {
@@ -44,7 +46,7 @@ export function readStaffList(text: string, opts: { domain: string; withPhones: 
   const head = lines[headerAt].split('\t').map((h) => clean(h).toLowerCase());
   const col = (...names: string[]) => head.findIndex((h) => names.includes(h));
   const at = { id: col('emp id', 'employee id'), name: col('name', 'full name'), des: col('designation'), proj: col('project assigned', 'project', 'department'),
-    doj: col('doj', 'date of joining'), mail: col('email id', 'email', 'official email'), tel: col('contact number', 'phone', 'mobile') };
+    doj: col('doj', 'date of joining'), mail: col('email id', 'email', 'official email'), tel: col('contact number', 'phone', 'mobile'), loc: col('work location', 'location') };
   for (const k of ['id', 'name', 'mail'] as const) if (at[k] < 0) throw new Error(`The heading row has no ${k === 'id' ? 'Emp ID' : k === 'name' ? 'Name' : 'Email ID'} column`);
 
   const report: ImportReport = { people: [], skipped: [], notes: [] };
@@ -106,7 +108,7 @@ export function readStaffList(text: string, opts: { domain: string; withPhones: 
 
     codes.set(code, name);
     emails.set(email, name);
-    report.people.push({ empCode: code, fullName: name, email, designation, department, joined, phone });
+    report.people.push({ empCode: code, fullName: name, email, designation, department, joined, phone, workLocation: get(at.loc) || null });
   });
   return report;
 }
@@ -180,4 +182,26 @@ export async function importStaff(q: Queryable, report: ImportReport, opts: Impo
     [JSON.stringify({ created: report.people.length, skipped: report.skipped.length, admins: opts.adminEmails })],
   );
   return { created: report.people.length, admins: opts.adminEmails, addedAdmins, approver };
+}
+
+/**
+ * Sets each person's work location from the "Work location" column: the office or hub whose name
+ * contains the place (Chennai -> "Head office - Chennai", Madurai -> "Madurai Regional Hub"). Safe to run again.
+ * Returns what was set, and what could not be matched, so HR can fix those by hand.
+ */
+export async function assignWorkLocations(q: Queryable, people: ImportedPerson[]) {
+  const fences = (await q.query('select id, name from geofences where active')).rows as { id: string; name: string }[];
+  const result = { set: 0, noPlace: 0, unmatchedPlaces: new Map<string, number>(), notFound: [] as string[] };
+  for (const p of people) {
+    if (!p.workLocation) { result.noPlace++; continue; }
+    const place = p.workLocation.replace(/\(.*?\)/g, '').trim().toLowerCase(); // "Trichy (Addl Charge -Thanjavur)" -> "trichy"
+    const fence = place ? fences.find((f) => f.name.toLowerCase().includes(place)) : undefined;
+    if (!fence) { result.unmatchedPlaces.set(p.workLocation, (result.unmatchedPlaces.get(p.workLocation) ?? 0) + 1); continue; }
+    const real = !p.email.endsWith('@no-email.invalid');
+    const r = await q.query(
+      `update employees set work_location_id = $1 where ${real ? 'lower(official_email) = lower($2)' : 'emp_code = $2'}`,
+      [fence.id, real ? p.email : p.empCode]);
+    if (r.rowCount) result.set++; else result.notFound.push(p.fullName);
+  }
+  return result;
 }

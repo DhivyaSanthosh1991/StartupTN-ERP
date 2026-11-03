@@ -1,0 +1,76 @@
+Sl. No	Emp ID	First Name		Last Name	Name	Designation	Project Assigned	DOJ	Work location	Email ID	Contact Number
+1					Singai G. Ramachandran	Chairman	Head	03/09/2026	Chennai	chairman@startuptn.in	
+2		Dr. Bhaskaran	 	E	Dr. Bhaskaran E	Joint Director			Chennai	jd@startuptn.in	9444113605
+3	STN002	Sai	 	Ranganathan	Sai Ranganathan	Associate Vice President	Investments	01/03/2021	Chennai	sai@startuptn.in	8951221153
+4	STN003	Nikunj	 	Panchal	Nikunj Panchal	Associate Vice President	Tech and Special projects	23/03/2021	Chennai	nikunj@startuptn.in	8148606827
+5	STN047	Stalin	 	Jacob J	Stalin Jacob J	Associate Vice President	SC/ST Funds	16/06/2023	Chennai	stalin@startuptn.in	97907 53771
+6	STNIU001	Premkumar	 	C N	Premkumar C N	Associate Vice President	Incubation - Programs	23/08/2023	Chennai	prem@startuptn.in	9600255750
+7	STN056	Akila	 	S	Akila S	Associate Vice President	Operations, Government Communication	16/03/2024	Chennai	akila@startuptn.in	9943887717
+8	STN092	Sridevi Meena	 	C	Sridevi Meena C	Associate Vice President	BeyondTN, GTP, Partnership and Alliances 	12/02/2026	Chennai	sridevimeena@startuptn.in	9944526761
+9	STN087	Ezhilarasan	 	S	Ezhilarasan S	Associate Vice President	Smart Card (Founder Circle Card), Market Access	19/12/2025	Chennai	ezhilarasan@startuptn.in	9500707667
+10	STN015	Rahul	 	N	Rahul N	Associate Vice President	Regional Hubs- Tirunelveli	18/07/2022	Chennai	rahul@startuptn.in	9585883512
+11	STN019	Ramajeyam	 	R M J	Ramajeyam R M J	Project Lead	SC/ST Funds	01/08/2022	Chennai	ram@startuptn.in	8838601352
+12	STN023	Senthamil	 	Arasan A	Senthamil Arasan A	Project Lead	Regional Hubs	22/08/2022	Cuddalore	senthamil@startuptn.in	8489831881
+13	STN029	Sakthivel	 	Kaliappan	Sakthivel Kaliappan	Project Lead	Regional Hubs	01/09/2022	Madurai	sakthivel@startuptn.in	9159158739
+14	STN030	Suganya	 	Selvaraj	Suganya Selvaraj	Project Lead	Investments	07/09/2022	Chennai	suganya@startuptn.in	9176683033
+15	STN066	Gigin	 	Durai C	Gigin Durai C	Project Lead	Regional Hubs	01/03/2023	Thoothukudi	gigin@startuptn.in	7200722996
+16	STN053	Devanathan	 	Veerappan	Devanathan Veerappan	Project Lead	Marcom	01/09/2023	Chennai	devanathan@startuptn.in	9952616415
+17	STN052	Gayathri	 	C	Gayathri C	Project Lead	Regional Hubs	01/09/2023	Coimbatore	gayathri@startuptn.in	9043283634
+18	STN054	Prashanthi 	 	B	Prashanthi  B	Project Lead	Regional Hubs	04/09/2023	Chennai	prashanthi@startuptn.in	7305620706
+19	STN055	Subramanian	 	N	Subramanian N	Project Lead	Open Innovation	05/10/2023	Chennai	subramanian@startuptn.in	9025672468
+20	STN063	Aneesh	 	S R	Aneesh S R	Project Lead	Incubation	18/03/2024	Chennai	aneesh@startuptn.in	8122630972
+21	STN062	Gurushankar	 	S	Gurushankar S	Project Lead	Regional Hubs	18/03/2024	Erode	guru@startuptn.in	9942885642
+22	STN059	Karuppanan	 	P	Karuppanan P	Project Lead	Regional Hubs	18/03/2024	Trichy (Addl Charge -Thanjavur)	karuppannan@startuptn.in	9994080430
+23	STN065	Jayagobi	 	S	Jayagobi S	Project Lead	Marcom	25/03/2024	Chennai	jayagobi@startuptn.in	9500421940
+24	STN072	Gopalakrishnan	 	K	Gopalakrishnan K	Project Lead	Marcom	01/04/2024	Chennai	gopalakrishnan@startuptn.in	9500436795
+25	STN076	Bharathakumar	 	S	Bharathakumar S	Project Lead	TANSEED	08/07/2024	Chennai	bharath@startuptn.in	8072809874
+26	STN077	Poongodi	 		Poongodi 	Project Lead	Chennai Hub	13/08/2024	Chennai	poongodi@startuptn.in	9677068417
+27	STN036	Gobinath	 	T	Gobinath T	Project Lead	Regional Hubs	24/12/2025	Salem	gobi@startuptn.in	7010128714
+28	STN043	Dhivyabharathi	 	K	Dhivyabharathi K	Project Lead	AI	24/12/2025	Chennai	dhivya@startuptn.in	9940347154
+29	STN090	Sathishkumar 	 	A	Sathishkumar  A	Project Lead	Tech	24/12/2025	Chennai	sathish@startuptn.in	9840941444
+30	STNIU002	Kavimukil	 	S	Kavimukil S	Project Lead	Incubation - Programs	02/02/2026	Chennai	kavimukil@startuptn.in	9176629796
+31	STN091	Lakshmi	 	Lakshmanan	Lakshmi Lakshmanan	Project Lead	Admin and Accounts	11/02/2026	Chennai	lakshmi@startuptn.in	9080812017
+32	STN014	Ragesh	 	U K	Ragesh U K	Project Associate	TANSEED	22/07/2022	Chennai	ragesh@startuptn.in	9566037795
+33	STN018	Saranya	 	Jeyasankar	Saranya Jeyasankar	Project Associate	Data	26/07/2022	Madurai	saranya@startuptn.in	9787522662
+34	STN022	Rajsekar	 	Sivasamy	Rajsekar Sivasamy	Project Associate	Regional Hubs	10/08/2022	Coimbatore	rajsekar@startuptn.in	7402352221
+35	STN037	Vibith	 	S	Vibith S	Project Associate	Regional Hubs	03/04/2023	Cuddalore	vibith@startuptn.in	8667783664
+36	STN040	Udhayakumar	 	Selvarasu	Udhayakumar Selvarasu	Project Associate	Chennai Hub	26/05/2023	Chennai	udhay@startuptn.in	9626699720
+37	STN042	Nagathilagam	 	M	Nagathilagam M	Project Associate	Regional Hubs	29/05/2023	Tirunelveli	thilaga@startuptn.in	6383473862
+38	STN046	Mahesh Kumar	 	S	Mahesh Kumar S	Project Associate	Regional Hubs	15/06/2023	Thanjavur	maheshkumar@startuptn.in	8144007308
+39	STN069	Suman 	 	D	Suman  D	Project Associate	SC/ST Funds	18/03/2024	Chennai	suman@startuptn.in	8270733995
+40	STN061	Naveenkumar	 	S	Naveenkumar S	Project Associate	AI	18/03/2024	Chennai	naveen@startuptn.in	8610331001
+41	STN070	Ashwanth	 	R	Ashwanth R	Project Associate	Facility	18/03/2024	Chennai	ashwanth@startuptn.in	7010874969
+42	STN060	Manoj Kumar	 	S M	Manoj Kumar S M	Project Associate	Regional Hubs	18/03/2024	Trichy	manoj@startuptn.in	7200434218
+43	STN068	Maran 	 	D	Maran  D	Project Associate	Smart Card (Founder Circle Card)	19/03/2024	Chennai	maran@startuptn.in	9043612567
+44	STN071	Renuka	 	D	Renuka D	Project Associate	Space Tech, WeSafe, HR	22/05/2024	Chennai	renuka@startuptn.in	9597158105
+45	STN074	Deepakraju	 	Sivanesan	Deepakraju Sivanesan	Project Associate	Regional Hubs	10/06/2024	Hosur	deepak@startuptn.in	8220634946
+46	STN078	Dhayanithi Maran	 	T	Dhayanithi Maran T	Project Associate	Incubation	26/09/2025	Chennai	dhaya@startuptn.in	8760228232
+47	STN079	Sakthipriya	 	D	Sakthipriya D	Project Associate	Enabler	26/09/2025	Chennai	sakthipriya@startuptn.in	9150970328
+48	STN080	Kalaivanan	 	D	Kalaivanan D	Project Associate	Marcom	26/09/2025	Chennai	kalaivanan@Startuptn.in	9940971316
+49	STN081	Nithya	 	Kanniappan	Nithya Kanniappan	Project Associate	Investments	26/09/2025	Chennai	nithya@startuptn.in	9940996814
+50	STN082	Roshine	 	T	Roshine T	Project Associate	Regional Hubs	27/09/2025	Salem	roshine@startuptn.in	8637628299
+51	STN084	Mohana Manoj	 	K	Mohana Manoj K	Project Associate	SC/ST Funds	07/10/2025	Chennai	mohanamanoj@startuptn.in	9789918210
+52	STN086	Jayasurya	 	B	Jayasurya B	Project Associate	Regional Hubs	14/11/2025	Thoothukudi	jayasurya@startuptn.in	7904030765
+53	STN005	Thiru. Saminaathan	 	K	Thiru. Saminaathan K	Advisor	Advisor	18/05/2022	Chennai	advisor@startuptn.in	8072721389
+54	TAN029	Sankar Rajaram	 	S	Sankar Rajaram S	Accounts Officer	Accounts Officer	08/04/2026	Chennai	ao@startuptn.in	9092147710
+55	TAN003	Gayathri	 	Gowtham	Gayathri Gowtham	Administrative Cum Accounts Coordinator	Administrative Cum Accounts Coordinator	20/06/2022	Chennai	ggayathri@startuptn.in	7299240967
+56	TAN023	Suganya	 	D	Suganya D	Admin Assistant	Admin Assistant	03/10/2025	Chennai	dsuganya@startuptn.in	9841529799
+57	TAN024	Guru Prasad	 	A S	Guru Prasad A S	Admin Assistant	Admin Assistant	15/12/2025	Chennai	guruprasad@startuptn.in	8838400337
+58	TAN027	Ananthi	 	R	Ananthi R	Admin Assistant	Admin Assistant	02/03/2026	Chennai	ananthi@startuptn.in	9791494308
+59	TAN025	Chakkaravarthy	 	S	Chakkaravarthy S	Administrative Cum Accounts Coordinator	Administrative Cum Accounts Coordinator	15/12/2025	Madurai	maduraihub@startuptn.in	8056913475
+60	TAN019	Ganesh	 	R	Ganesh R	Administrative cum Accounts Coordinator	Administrative cum Accounts Coordinator	19/05/2025	Coimbatore	coimbatorehub@startuptn.in	9080621398
+61	TAN021	Rajeev Prasad	 	R	Rajeev Prasad R	Administrative cum Accounts Coordinator	Administrative cum Accounts Coordinator	01/07/2025	Thanjavur	thanjavurhub@startuptn.in	9597080089
+62	TAN028	Anish Fathima	 		Anish Fathima 	Administrative cum Accounts Coordinator	Administrative cum Accounts Coordinator	01/04/2026	Tirunelveli	tirunelvelihub@startuptn.in	8754699605
+63	TAN018	Sambath	 	M	Sambath M	EA to MD & CEO	EA to MD & CEO	05/06/2024	Chennai		9043628152
+64	TAN026	Divya Devi	 	D	Divya Devi D	Receptionist	Receptionist	02/03/2026	Chennai	hello@startuptn.in	8248721961
+65	TAN006	Vinoth Kumar	 	R	Vinoth Kumar R	Office Assistant	Office Assistant	15/06/2022	Chennai		9962729254
+66	TAN007	Pandiyan	 	C	Pandiyan C	Office Assistant	Office Assistant	10/08/2022	Chennai		7339191790
+67	TAN009	Kuberan	 	K	Kuberan K	Office Assistant	Office Assistant	20/02/2024	Chennai		8072817843
+68	TAN010	Ganeshwary V	 		Ganeshwary V 	Office Assistant	Office Assistant	10/10/2022	Madurai		
+69	TAN011	Maria Francis B	 		Maria Francis B 	Office Assistant	Office Assistant	06/06/2023	Tirunelveli		
+70	TAN017	Srimathi	 		Srimathi 	Office Assistant	Office Assistant	14/10/2024	Erode		
+71	TAN008	Sabari	 	V	Sabari V	Driver	Driver	01/08/2022	Chennai		6385357653
+72	TAN016	Ganeshwary	 	V	Kaladevi A	Housekeeping	Admin Team	10/10/2022	Madurai		
+73	TAN014	Maria Francis	 	B	Seethalakshmi	Housekeeping	Admin Team	06/06/2023	Tirunelveli		
+74	TAN015	Srimathi	 		Bhuvaneswari	Housekeeping	Admin Team	14/10/2024	Erode		9750907907
+75	TANIU01	Karpagambal	 	S	Karpagambal S	Administrative Staff	Administrative Staff	06/05/2026	Chennai	karpagambal@startuptn.in	9941384322

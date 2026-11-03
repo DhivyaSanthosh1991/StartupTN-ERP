@@ -113,7 +113,7 @@ export interface DirectoryPerson {
 
 export interface EmployeeProfile extends DirectoryPerson {
   phone: string | null; employmentType: 'permanent' | 'contract' | 'consultant' | 'intern'; dateOfJoining: string | null;
-  dateOfBirth: string | null; gender: 'female' | 'male' | 'other' | null; reportingManagerName: string | null; status: 'active' | 'inactive' | 'exited'; exitDate: string | null;
+  dateOfBirth: string | null; gender: 'female' | 'male' | 'other' | null; workLocationId: string | null; workLocationName: string | null; reportingManagerName: string | null; status: 'active' | 'inactive' | 'exited'; exitDate: string | null;
   locationConsentAt: string | null; photoConsentAt: string | null; attendanceMethod: 'selfie' | 'biometric'; biometricCode: string | null; roles: string[]; directReports: number; isManager: boolean;
 }
 

@@ -12,11 +12,11 @@ const ROLES: Role[] = ['hod', 'md', 'hr_admin', 'finance', 'super_admin'];
 
 interface FormState {
   empCode: string; fullName: string; officialEmail: string; phone: string; designation: string; departmentId: string;
-  employmentType: string; dateOfJoining: string; dateOfBirth: string; gender: string; reportingManagerId: string; status: string; exitDate: string; roles: Role[];
+  employmentType: string; dateOfJoining: string; dateOfBirth: string; gender: string; workLocationId: string; reportingManagerId: string; status: string; exitDate: string; roles: Role[];
   attendanceMethod: string; biometricCode: string;
 }
 const EMPTY: FormState = {
-  empCode: '', fullName: '', officialEmail: '', phone: '', designation: '', departmentId: '', employmentType: 'permanent', gender: '',
+  empCode: '', fullName: '', officialEmail: '', phone: '', designation: '', departmentId: '', employmentType: 'permanent', gender: '', workLocationId: '',
   dateOfJoining: '', dateOfBirth: '', reportingManagerId: '', status: 'active', exitDate: '', roles: [],
   attendanceMethod: 'selfie', biometricCode: '',
 };
@@ -83,6 +83,7 @@ export default function AdminEmployeesPage() {
 function EmployeeDialog({ target, people, departments, canEdit, canRoles, onClose, onDone }: {
   target: EmployeeProfile | 'new' | null; people: EmployeeProfile[]; departments: Department[]; canEdit: boolean; canRoles: boolean; onClose: () => void; onDone: () => void;
 }) {
+  const locations = useApi<{ id: string; name: string }[]>('/attendance/geofences');
   const toast = useToast();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
@@ -95,7 +96,7 @@ function EmployeeDialog({ target, people, departments, canEdit, canRoles, onClos
     setError('');
     setForm(target === 'new' || !target ? EMPTY : {
       empCode: target.empCode, fullName: target.fullName, officialEmail: target.officialEmail, phone: target.phone ?? '', designation: target.designation ?? '',
-      departmentId: target.departmentId ?? '', employmentType: target.employmentType, dateOfJoining: target.dateOfJoining ?? '', dateOfBirth: target.dateOfBirth ?? '', gender: target.gender ?? '',
+      departmentId: target.departmentId ?? '', employmentType: target.employmentType, dateOfJoining: target.dateOfJoining ?? '', dateOfBirth: target.dateOfBirth ?? '', gender: target.gender ?? '', workLocationId: target.workLocationId ?? '',
       reportingManagerId: target.reportingManagerId ?? '', status: target.status, exitDate: target.exitDate ?? '', roles: target.roles as Role[],
       attendanceMethod: target.attendanceMethod, biometricCode: target.biometricCode ?? '',
     });
@@ -114,7 +115,7 @@ function EmployeeDialog({ target, people, departments, canEdit, canRoles, onClos
         const body: Record<string, unknown> = {
           empCode: form.empCode, fullName: form.fullName, officialEmail: form.officialEmail, phone: form.phone || null, designation: form.designation || null,
           departmentId: form.departmentId || null, employmentType: form.employmentType, dateOfJoining: form.dateOfJoining || null,
-          dateOfBirth: form.dateOfBirth || null, gender: form.gender || null, reportingManagerId: form.reportingManagerId || null,
+          dateOfBirth: form.dateOfBirth || null, gender: form.gender || null, workLocationId: form.workLocationId || null, reportingManagerId: form.reportingManagerId || null,
           attendanceMethod: form.attendanceMethod, biometricCode: form.attendanceMethod === 'biometric' ? form.biometricCode.trim() : null,
         };
         if (!isNew) { body.status = form.status; body.exitDate = form.exitDate || null; }
@@ -166,6 +167,11 @@ function EmployeeDialog({ target, people, departments, canEdit, canRoles, onClos
               </Field>
               <Field label="Date of joining"><Input type="date" value={form.dateOfJoining} onChange={(e) => set({ dateOfJoining: e.target.value })} /></Field>
               <Field label="Date of birth"><Input type="date" value={form.dateOfBirth} onChange={(e) => set({ dateOfBirth: e.target.value })} /></Field>
+              <Field label="Work location" hint="Check-ins are judged against this place. Leave empty to accept any location.">
+                <Select value={form.workLocationId} onChange={(e) => set({ workLocationId: e.target.value })}>
+                  <option value="">Not set</option>{(locations.data ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </Select>
+              </Field>
               <Field label="Gender" hint="Decides who sees maternity and paternity leave.">
                 <Select value={form.gender} onChange={(e) => set({ gender: e.target.value })}>
                   <option value="">Not set</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option>

@@ -123,7 +123,7 @@ export class AttendanceService implements OnModuleInit {
       await this.db.tx(async (q) => {
         await q.query('select pg_advisory_xact_lock(hashtext($1))', [`punch:${user.id}`]);
 
-        const emp = (await q.query('select location_consent_at, photo_consent_at, attendance_method from employees where id = $1', [user.id])).rows[0];
+        const emp = (await q.query('select location_consent_at, photo_consent_at, attendance_method, work_location_id from employees where id = $1', [user.id])).rows[0];
         const onDuty = (await q.query(
           `select 1 from od_requests where employee_id = $1 and kind = 'od' and status = 'approved' and from_date <= $2 and to_date >= $2 limit 1`,
           [user.id, workDate])).rows.length > 0;
@@ -145,7 +145,9 @@ export class AttendanceService implements OnModuleInit {
         if (kind === 'check_in' && open) throw conflict('ALREADY_CHECKED_IN', 'You are already checked in. Check out first');
         if (kind === 'check_out' && !open) throw conflict('NOT_CHECKED_IN', 'You have not checked in yet today');
 
-        const match = matchGeofence(input.latitude, input.longitude, fences);
+        // A person is judged against their own work location. With none set, any location counts.
+        const own = emp.work_location_id ? fences.find((f) => f.id === emp.work_location_id) : undefined;
+        const match = matchGeofence(input.latitude, input.longitude, own ? [own] : fences);
         const flags: string[] = [];
         // On an approved on-duty day being away from the office is expected, so it is not flagged; the location is still saved.
         if (match.within === false && !onDuty) flags.push('outside_geofence');
