@@ -1,7 +1,7 @@
 import { Queryable } from '../db/db.service';
 
-export type RequestType = 'leave' | 'od' | 'permission' | 'regularisation';
-export const REQUEST_TYPES: RequestType[] = ['leave', 'od', 'permission', 'regularisation'];
+export type RequestType = 'leave' | 'od' | 'permission' | 'regularisation' | 'od_home';
+export const REQUEST_TYPES: RequestType[] = ['leave', 'od', 'permission', 'regularisation', 'od_home'];
 
 export interface ApprovalRequestRow {
   id: string;

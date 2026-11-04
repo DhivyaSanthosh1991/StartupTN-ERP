@@ -21,7 +21,7 @@ describe('on duty and permission', () => {
   };
 
   const od = (agent: any, body: Record<string, unknown>) =>
-    agent.post('/api/od/requests').send({ kind: 'od', purpose: 'Startup summit, Coimbatore', ...body });
+    agent.post('/api/od/requests').send({ kind: 'od', location: 'Convention centre, Coimbatore', purpose: 'Startup summit, Coimbatore', ...body });
   const permission = (agent: any, body: Record<string, unknown>) =>
     agent.post('/api/od/requests').send({ kind: 'permission', purpose: 'Bank work', fromTime: '14:00', toTime: '15:30', ...body });
 

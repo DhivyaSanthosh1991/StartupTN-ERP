@@ -147,6 +147,15 @@ describe('StartupTN leave policy', () => {
       expect(await codes()).not.toContain('ML');
     });
 
+    it('applies to administrative staff too, alongside their own leave', async () => {
+      await env.db.query(`update employees set designation = 'Housekeeping', gender = 'female' where id = $1`, [env.ids.priya]);
+      const codes = ((await (await env.as('priya')).get('/api/leave/types')).body as any[]).map((t) => t.code);
+      expect(codes).toEqual(expect.arrayContaining(['AL', 'ML', 'MSC']));
+      await env.db.query(`update employees set designation = 'Driver', gender = 'male' where id = $1`, [env.ids.ravi]);
+      const male = ((await (await env.as('ravi')).get('/api/leave/types')).body as any[]).map((t) => t.code);
+      expect(male).toEqual(expect.arrayContaining(['AL', 'PL']));
+    });
+
     it('counts 12 weeks as 84 calendar days, takes nothing from other balances, and allows two children', async () => {
       setToday('2026-05-04T06:00:00Z');
       await env.db.query(`update employees set gender = 'female' where id = $1`, [env.ids.priya]);

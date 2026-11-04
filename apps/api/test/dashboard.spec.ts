@@ -58,7 +58,7 @@ describe('dashboard', () => {
       const priya = await env.as('priya');
       const monday = futureMonday();
       expect((await applyLeave(priya, 'CL', monday, monday)).status).toBe(201);
-      expect((await priya.post('/api/od/requests').send({ kind: 'od', fromDate: addDays(monday, 1), toDate: addDays(monday, 1), location: 'Madurai', purpose: 'Visit' })).status).toBe(201);
+      expect((await priya.post('/api/od/requests').send({ kind: 'od', fromDate: addDays(monday, 1), toDate: addDays(monday, 1), location: 'Madurai hub', purpose: 'Visit' })).status).toBe(201);
       expect((await priya.post('/api/od/requests').send({ kind: 'permission', fromDate: addDays(monday, 2), toDate: addDays(monday, 2), fromTime: '10:00', toTime: '11:00', purpose: 'Bank' })).status).toBe(201);
 
       const d = await home('priya');
@@ -115,7 +115,7 @@ describe('dashboard', () => {
     it('lists at most the three oldest', async () => {
       const monday = futureMonday();
       const priya = await env.as('priya');
-      for (let i = 0; i < 4; i++) await priya.post('/api/od/requests').send({ kind: 'od', fromDate: addDays(monday, i), toDate: addDays(monday, i), location: 'X', purpose: `Visit ${i}` });
+      for (let i = 0; i < 4; i++) await priya.post('/api/od/requests').send({ kind: 'od', fromDate: addDays(monday, i), toDate: addDays(monday, i), location: 'Venue X', purpose: `Visit ${i}` });
       const d = await home('mani');
       expect(d.approvals.waiting).toBe(4);
       expect(d.approvals.oldest).toHaveLength(3);

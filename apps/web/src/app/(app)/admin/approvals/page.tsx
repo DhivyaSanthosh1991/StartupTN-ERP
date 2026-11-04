@@ -17,7 +17,7 @@ const KIND_LABEL: Record<Kind, string> = {
   employee: 'One named person',
 };
 
-const ORDER = ['leave', 'od', 'permission', 'regularisation'];
+const ORDER = ['leave', 'od', 'permission', 'regularisation', 'od_home'];
 
 export default function AdminApprovalsPage() {
   const flows = useApi<Workflow[]>('/admin/workflows');

@@ -218,7 +218,7 @@ describe('attendance and GPS tagging', () => {
       expect((await dayOf(priya, day)).status).not.toBe('leave');
 
       const ravi = await env.as('ravi');
-      const od = await ravi.post('/api/od/requests').send({ kind: 'od', fromDate: day, purpose: 'Partner visit' });
+      const od = await ravi.post('/api/od/requests').send({ kind: 'od', fromDate: day, location: 'Partner office, Madurai', purpose: 'Partner visit' });
       await decide(mani, od.body.approvalRequestId, 'approve');
       expect(await dayOf(ravi, day)).toMatchObject({ status: 'od' });
       expect(await storedDay(env.ids.ravi, day)).toMatchObject({ status: 'od' });

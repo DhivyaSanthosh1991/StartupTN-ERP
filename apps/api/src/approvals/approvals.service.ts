@@ -19,7 +19,7 @@ interface StepRow {
 }
 
 const TYPE_LABEL: Record<RequestType, string> = {
-  leave: 'Leave', od: 'On duty', permission: 'Permission', regularisation: 'Attendance correction',
+  leave: 'Leave', od: 'On duty', permission: 'Permission', regularisation: 'Attendance correction', od_home: 'Going home after duty',
 };
 
 /** Roles tried, in order, when a chain cannot be resolved or a step goes unanswered. */

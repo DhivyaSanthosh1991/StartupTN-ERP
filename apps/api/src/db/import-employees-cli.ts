@@ -20,10 +20,10 @@ const DEMO_CODES = ['E001', 'E002', 'E003', 'E004', 'E005', 'E006', 'E007', 'E00
 /** The standard approver chains (the same ones migration 0002 creates). Safe to run again. */
 const DEFAULT_FLOWS = `
   insert into approval_workflows (request_type, name) values
-    ('leave','Leave approval'),('od','On-duty approval'),('permission','Permission approval'),('regularisation','Attendance regularisation approval')
+    ('leave','Leave approval'),('od','On-duty approval'),('permission','Permission approval'),('regularisation','Attendance regularisation approval'),('od_home','Going home after duty')
   on conflict (request_type) do nothing;
   insert into approval_workflow_steps (workflow_id, step_order, approver_kind, min_days, sla_hours)
-    select w.id, 1, 'reporting_manager', null, 48 from approval_workflows w where w.request_type in ('leave','od','permission','regularisation')
+    select w.id, 1, 'reporting_manager', null, 48 from approval_workflows w where w.request_type in ('leave','od','permission','regularisation','od_home')
   on conflict (workflow_id, step_order) do nothing;
   insert into approval_workflow_steps (workflow_id, step_order, approver_kind, min_days, sla_hours)
     select w.id, 2, 'department_head', 5, 48 from approval_workflows w where w.request_type = 'leave'
