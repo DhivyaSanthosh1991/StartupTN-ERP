@@ -19,6 +19,7 @@ export interface ApplyOdInput {
   fromTime?: string;
   toTime?: string;
   location?: string;
+  meetingTime?: string;
   purpose: string;
 }
 
@@ -116,13 +117,13 @@ export class OdService implements OnModuleInit {
       }
 
       const req = (await q.query(
-        `insert into od_requests (employee_id, kind, from_date, to_date, from_time, to_time, location, purpose)
-         values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
-        [user.id, input.kind, input.fromDate, input.toDate, input.fromTime ?? null, input.toTime ?? null, input.location ?? null, input.purpose])).rows[0];
+        `insert into od_requests (employee_id, kind, from_date, to_date, from_time, to_time, location, purpose, meeting_time)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+        [user.id, input.kind, input.fromDate, input.toDate, input.fromTime ?? null, input.toTime ?? null, input.location ?? null, input.purpose, input.meetingTime ?? null])).rows[0];
 
       const summary = input.kind === 'od'
         ? `On duty: ${prettyDate(input.fromDate)}${input.toDate !== input.fromDate ? ` to ${prettyDate(input.toDate)}` : ''}` +
-          ` — ${user.fullName} (${input.purpose}${input.location ? `, ${input.location}` : ''})`
+          ` — ${user.fullName} (${input.purpose}${input.location ? `, ${input.location}` : ''}${input.meetingTime ? `, to be there by ${input.meetingTime}` : ''})`
         : `Permission: ${prettyDate(input.fromDate)}, ${input.fromTime}–${input.toTime} (${minutes} min) — ${user.fullName} (${input.purpose})`;
       const approvalId = await this.approvals.submit(q, { type: input.kind, refId: req.id, requesterId: user.id, summary, size: 1 });
       await q.query('update od_requests set approval_request_id = $2 where id = $1', [req.id, approvalId]);
@@ -235,9 +236,19 @@ export class OdService implements OnModuleInit {
 
   private async withApproval(rows: any[]) {
     const summaries = await this.approvals.summaries(rows.map((r) => r.approval_request_id).filter(Boolean));
+    // Where and when the person checked in and out on the duty (their own punches on the on-duty days).
+    const visits = rows.length ? await this.db.rows(
+      `select od_request_id, event_type, event_at, latitude, longitude from attendance_events
+        where od_request_id = any($1::uuid[]) and not ('superseded' = any(flags)) order by event_at`, [rows.map((r) => r.id)]) : [];
+    const stops = rows.length ? await this.db.rows(
+      `select od_request_id, location, meeting_time, work_date::text as work_date from od_stops where od_request_id = any($1::uuid[]) order by created_at`, [rows.map((r) => r.id)]) : [];
     return rows.map((r) => {
       const a = summaries.get(r.approval_request_id);
       return {
+        meetingTime: r.meeting_time ? hhmm(r.meeting_time) : null,
+        stops: stops.filter((x) => x.od_request_id === r.id).map((x) => ({ location: x.location as string, meetingTime: x.meeting_time ? hhmm(x.meeting_time) : null, date: x.work_date as string })),
+        siteVisits: visits.filter((v) => v.od_request_id === r.id).map((v) => ({
+          type: v.event_type as 'check_in' | 'check_out', at: v.event_at as Date, latitude: v.latitude as number | null, longitude: v.longitude as number | null })),
         id: r.id as string, kind: r.kind as OdKind, employeeId: r.employee_id as string, employeeName: r.employee_name as string,
         empCode: r.emp_code as string, fromDate: r.from_date as string, toDate: r.to_date as string,
         fromTime: r.from_time ? hhmm(r.from_time) : null, toTime: r.to_time ? hhmm(r.to_time) : null,

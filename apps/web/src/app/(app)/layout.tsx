@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon, IconName } from '@/components/icons';
+import { PresenceWatcher } from '@/components/presence-check';
 import { Avatar, Loading, cx } from '@/components/ui';
 import { api } from '@/lib/api';
 import { LOGO_SIZE, LOGO_SRC } from '@/lib/logo';
@@ -144,6 +145,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         )}
 
         <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 md:px-8 md:pb-14 md:pt-9">{children}</main>
+        <PresenceWatcher />
 
         <nav aria-label="Quick links" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-line bg-surface md:hidden">
           {NAV.filter((i) => TABS.includes(i.href)).map((i) => {

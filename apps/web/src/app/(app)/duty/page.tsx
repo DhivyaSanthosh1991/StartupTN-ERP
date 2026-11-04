@@ -5,11 +5,19 @@ import { ApprovalTrail } from '@/components/approval-trail';
 import { KindBadge, RequestRow } from '@/components/request-row';
 import { Button, Dialog, Empty, ErrorNote, Field, FormActions, Input, Loading, Notice, PageHeader, Panel, Section, Select, Tabs, Textarea, useToast } from '@/components/ui';
 import { api, errorText, useApi } from '@/lib/api';
-import { fmtHm, fmtMinutes, fmtRange, monthLabel, todayIst } from '@/lib/dates';
+import { fmtClock, fmtHm, fmtMinutes, fmtRange, monthLabel, todayIst } from '@/lib/dates';
 import { useSession } from '@/lib/session';
 import type { OdRequest } from '@/lib/types';
 
 interface Quota { month: string; used: number; limit: number; remaining: number; maxMinutes: number }
+
+/** When the person was at the duty location, from their own check-ins that day. */
+const siteLine = (r: OdRequest) => {
+  const v = r.siteVisits ?? [];
+  const inn = v.find((x) => x.type === 'check_in');
+  const out = [...v].reverse().find((x) => x.type === 'check_out');
+  return inn ? ` · At the site: in ${fmtClock(inn.at)}${out ? `, out ${fmtClock(out.at)}` : ''}` : '';
+};
 
 const title = (r: OdRequest) => r.kind === 'od' ? `On duty${r.location ? ` · ${r.location}` : ''}` : `Permission · ${fmtHm(r.fromTime!)}–${fmtHm(r.toTime!)} (${fmtMinutes(r.minutes ?? 0)})`;
 
@@ -73,7 +81,7 @@ function List({ list, mine, onChanged }: { list: ReturnType<typeof useApi<OdRequ
     <Panel>
       <ul className="divide-y divide-line">
         {list.data.map((r) => (
-          <RequestRow key={r.id} who={mine ? undefined : r.employeeName} title={title(r)} meta={`${fmtRange(r.fromDate, r.toDate)} · ${r.purpose}`}
+          <RequestRow key={r.id} who={mine ? undefined : r.employeeName} title={title(r)} meta={`${fmtRange(r.fromDate, r.toDate)} · ${r.purpose}${r.meetingTime ? ` · Be there by ${fmtHm(r.meetingTime)}` : ''}${(r.stops ?? []).length ? ` · Then: ${(r.stops ?? []).map((x) => x.location).join(', ')}` : ''}${siteLine(r)}`}
             status={r.status} approver={r.currentApprover} comment={r.lastComment}
             onOpen={r.approvalRequestId ? () => setTrail(r.approvalRequestId) : undefined}
             actions={mine && (r.status === 'pending' || (r.status === 'approved' && r.fromDate > today))
@@ -101,14 +109,14 @@ function Team() {
 
 function RequestDialog({ kind, quota, onClose, onDone }: { kind: 'od' | 'permission' | null; quota?: Quota; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
-  const [form, setForm] = useState({ fromDate: '', toDate: '', fromTime: '', toTime: '', location: '', purpose: '' });
+  const [form, setForm] = useState({ fromDate: '', toDate: '', fromTime: '', toTime: '', location: '', meetingTime: '', purpose: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [seen, setSeen] = useState<string | null>(null);
 
   if (kind && kind !== seen) {
     setSeen(kind);
-    setForm({ fromDate: todayIst(), toDate: todayIst(), fromTime: '', toTime: '', location: '', purpose: '' });
+    setForm({ fromDate: todayIst(), toDate: todayIst(), fromTime: '', toTime: '', location: '', meetingTime: '', purpose: '' });
     setError('');
   }
   if (!kind && seen) setSeen(null);
@@ -119,7 +127,7 @@ function RequestDialog({ kind, quota, onClose, onDone }: { kind: 'od' | 'permiss
     setError('');
     try {
       const body = kind === 'od'
-        ? { kind, fromDate: form.fromDate, toDate: form.toDate, location: form.location || undefined, purpose: form.purpose }
+        ? { kind, fromDate: form.fromDate, toDate: form.toDate, location: form.location.trim(), meetingTime: form.meetingTime || undefined, purpose: form.purpose }
         : { kind, fromDate: form.fromDate, fromTime: form.fromTime, toTime: form.toTime, purpose: form.purpose };
       await api('/od/requests', { method: 'POST', body });
       toast(kind === 'od' ? 'On-duty request sent for approval' : 'Permission request sent for approval');
@@ -140,7 +148,8 @@ function RequestDialog({ kind, quota, onClose, onDone }: { kind: 'od' | 'permiss
               <Field label="From"><Input type="date" required value={form.fromDate} onChange={(e) => setForm({ ...form, fromDate: e.target.value, toDate: form.toDate < e.target.value ? e.target.value : form.toDate })} /></Field>
               <Field label="To"><Input type="date" required min={form.fromDate} value={form.toDate} onChange={(e) => setForm({ ...form, toDate: e.target.value })} /></Field>
             </div>
-            <Field label="Where"><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Madurai incubator" /></Field>
+            <Field label="Where is the duty?" hint="The venue and city. On the day you check in there to confirm you have arrived."><Input required minLength={3} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Madurai incubator, Madurai" /></Field>
+            <Field label="Must be there by (optional)" hint="If the meeting is fixed for a time, such as 10:30, say so. You can then go straight to the venue without visiting the office first, and you will not be marked late for it."><Input type="time" value={form.meetingTime} onChange={(e) => setForm({ ...form, meetingTime: e.target.value })} /></Field>
             <Field label="Work to be done"><Textarea required minLength={3} value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} /></Field>
             <p className="text-xs text-muted">Whole days only. Weekly offs and holidays in between are skipped.</p>
           </>

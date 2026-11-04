@@ -9,14 +9,14 @@ import type { PunchEvent, TodayAttendance } from '@/lib/types';
 import { Capture, SelfieCapture, SelfieThumb } from './selfie';
 import { Badge, Button, Dialog, FormActions, Notice, cx } from './ui';
 
-function locate(): Promise<GeolocationPosition> {
+export function locate(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) return reject(new Error('This browser cannot share a location.'));
     navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 });
   });
 }
 
-function locationProblem(e: unknown): string {
+export function locationProblem(e: unknown): string {
   if (e instanceof ApiError) return e.message;
   const code = (e as GeolocationPositionError | undefined)?.code;
   if (code === 1) return 'Location is blocked for this site. Allow location in your browser settings, then try again.';

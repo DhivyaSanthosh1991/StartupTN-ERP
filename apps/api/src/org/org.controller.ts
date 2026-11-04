@@ -23,6 +23,9 @@ const settingsBody = z
     attendance_start_date: dateStr.nullable(),
     selfie_required: z.boolean(),
     selfie_retention_days: int(7, 365),
+    presence_checks_per_day: int(0, 6),
+    presence_response_minutes: int(2, 60),
+    presence_min_gap_minutes: int(15, 480),
   })
   .partial()
   .strict();

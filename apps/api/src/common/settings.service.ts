@@ -19,6 +19,12 @@ export interface OrgSettings {
   selfie_required: boolean;
   /** Selfies are deleted this many days after they were taken; the punch and its location stay. */
   selfie_retention_days: number;
+  /** Random location checks per working day. 0 switches them off. */
+  presence_checks_per_day: number;
+  /** How long a person has to answer a random check. */
+  presence_response_minutes: number;
+  /** At least this long between one check and the next, and after checking in. */
+  presence_min_gap_minutes: number;
 }
 
 export const SETTING_DEFAULTS: OrgSettings = {
@@ -36,6 +42,9 @@ export const SETTING_DEFAULTS: OrgSettings = {
   attendance_start_date: null,
   selfie_required: true,
   selfie_retention_days: 90,
+  presence_checks_per_day: 2,
+  presence_response_minutes: 10,
+  presence_min_gap_minutes: 120,
 };
 
 const TTL_MS = 30_000;

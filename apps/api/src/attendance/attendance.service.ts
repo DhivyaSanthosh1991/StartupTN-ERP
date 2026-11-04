@@ -1,3 +1,5 @@
+import { BreaksService } from './breaks.service';
+import { PresenceService } from './presence.service';
 import { randomUUID } from 'crypto';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AuditService } from '../common/audit.service';
@@ -49,6 +51,8 @@ export class AttendanceService implements OnModuleInit {
     private readonly recalc: DayRecalc,
     private readonly employees: EmployeesService,
     private readonly storage: StorageService,
+    private readonly breaks: BreaksService,
+    private readonly presence: PresenceService,
   ) {}
 
   private readonly log = new Logger(AttendanceService.name);
@@ -124,9 +128,13 @@ export class AttendanceService implements OnModuleInit {
         await q.query('select pg_advisory_xact_lock(hashtext($1))', [`punch:${user.id}`]);
 
         const emp = (await q.query('select location_consent_at, photo_consent_at, attendance_method, work_location_id from employees where id = $1', [user.id])).rows[0];
-        const onDuty = (await q.query(
-          `select 1 from od_requests where employee_id = $1 and kind = 'od' and status = 'approved' and from_date <= $2 and to_date >= $2 limit 1`,
-          [user.id, workDate])).rows.length > 0;
+        const duty = (await q.query(
+          `select id from od_requests where employee_id = $1 and kind = 'od' and status = 'approved' and from_date <= $2 and to_date >= $2 limit 1`,
+          [user.id, workDate])).rows[0];
+        const onDuty = !!duty;
+        const stop = duty ? (await q.query(
+          `select id from od_stops where od_request_id = $1 and work_date = $2 and created_at <= $3 order by created_at desc limit 1`,
+          [duty.id, workDate, now])).rows[0] : undefined;
         if (emp.attendance_method === 'biometric' && !onDuty) {
           throw conflict('BIOMETRIC_ONLY', 'Your attendance is recorded by the biometric machine. This button is only for approved on-duty days');
         }
@@ -148,6 +156,8 @@ export class AttendanceService implements OnModuleInit {
         // A person is judged against their own work location. With none set, any location counts.
         const own = emp.work_location_id ? fences.find((f) => f.id === emp.work_location_id) : undefined;
         const match = matchGeofence(input.latitude, input.longitude, own ? [own] : fences);
+        // Back at their own office after duty: that is office time, not a visit to the duty location.
+        const atOwnOffice = !!own && match.within === true;
         const flags: string[] = [];
         // On an approved on-duty day being away from the office is expected, so it is not flagged; the location is still saved.
         if (match.within === false && !onDuty) flags.push('outside_geofence');
@@ -171,10 +181,12 @@ export class AttendanceService implements OnModuleInit {
 
         await q.query(
           `insert into attendance_events (id, employee_id, event_type, event_at, work_date, latitude, longitude, accuracy_m,
-                                          geofence_id, within_geofence, flags, source, note, selfie_key)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+                                          geofence_id, within_geofence, flags, source, note, selfie_key, od_request_id, od_stop_id)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
           [eventId, user.id, kind, now, workDate, input.latitude, input.longitude, input.accuracyM ?? null,
-           match.fenceId, match.within, flags, input.source, input.note ?? null, storedKey]);
+           match.fenceId, match.within, flags, input.source, input.note ?? null, storedKey,
+           atOwnOffice ? null : duty?.id ?? null, atOwnOffice ? null : stop?.id ?? null]);
+        if (kind === 'check_out') await this.breaks.closeOpen(q, user.id, now);
         await this.recompute(q, user.id, workDate, workDate, now);
       });
     } catch (err) {
@@ -182,6 +194,30 @@ export class AttendanceService implements OnModuleInit {
       throw err;
     }
     return this.today(user);
+  }
+
+  // ----------------------------------------------------------- breaks and checks
+
+  startBreak(user: AuthUser, input: { kind: 'lunch' | 'other'; note?: string }, now: Date = new Date()) {
+    return this.breaks.start(user, input, now);
+  }
+
+  endBreak(user: AuthUser, now: Date = new Date()) {
+    return this.breaks.end(user, now);
+  }
+
+  /** Asked by the open portal about once a minute: is there a random location check waiting? */
+  presenceCheck(user: AuthUser, now: Date = new Date(), random?: () => number) {
+    return this.presence.poll(user, now, random, (q, date) => this.recompute(q, user.id, date, date, now));
+  }
+
+  /** HR only: random location checks that came back from outside the work location or were not answered. */
+  presenceReport(date: string, now: Date = new Date()) {
+    return this.presence.report(date, now);
+  }
+
+  answerPresence(user: AuthUser, id: string, input: { latitude: number; longitude: number; accuracyM?: number }, now: Date = new Date()) {
+    return this.presence.respond(user, id, input, now, (q, date) => this.recompute(q, user.id, date, date, now));
   }
 
   private async eventsOn(q: Queryable, employeeId: string, date: string): Promise<PunchEvent[]> {
@@ -208,7 +244,7 @@ export class AttendanceService implements OnModuleInit {
     const leave = await this.db.one(
       `select day_part from leave_requests where employee_id = $1 and status = 'approved' and from_date <= $2 and to_date >= $2 limit 1`, [user.id, date]);
     const od = await this.db.one(
-      `select 1 as x from od_requests where employee_id = $1 and kind = 'od' and status = 'approved' and from_date <= $2 and to_date >= $2 limit 1`, [user.id, date]);
+      `select id, location, purpose from od_requests where employee_id = $1 and kind = 'od' and status = 'approved' and from_date <= $2 and to_date >= $2 limit 1`, [user.id, date]);
 
     return {
       date,
@@ -231,12 +267,15 @@ export class AttendanceService implements OnModuleInit {
         selfie: e.has_selfie as boolean, selfiePurged: e.selfie_purged as boolean,
       })),
       day: day ? dayView(day) : null,
+      breaks: await this.breaks.state(user, now),
       info: {
         holiday: (holiday?.name as string | undefined) ?? null,
         weeklyOff: s.weekly_off_days.includes(dayOfWeek(date)),
         leave: leave ? (leave.day_part as string) : null,
         od: !!od,
       },
+      /** The approved on-duty work today, if any: where the person is expected to be. */
+      duty: od ? { id: od.id as string, location: od.location as string | null, purpose: od.purpose as string } : null,
     };
   }
 
@@ -411,10 +450,10 @@ export class AttendanceService implements OnModuleInit {
 
     const events = new Map<string, PunchEvent[]>();
     for (const e of (await q.query(
-      `select employee_id, event_type, event_at, work_date, flags, (selfie_key is not null or selfie_purged_at is not null) as has_selfie
+      `select employee_id, event_type, event_at, work_date, flags, (selfie_key is not null or selfie_purged_at is not null) as has_selfie, (od_request_id is not null) as on_site
          from attendance_events where employee_id = any($1::uuid[]) and work_date between $2 and $3`, [employeeIds, from, to])).rows) {
       const key = `${e.employee_id}|${e.work_date}`;
-      events.set(key, [...(events.get(key) ?? []), { type: e.event_type, at: e.event_at, flags: e.flags, selfie: e.has_selfie }]);
+      events.set(key, [...(events.get(key) ?? []), { type: e.event_type, at: e.event_at, flags: e.flags, selfie: e.has_selfie, site: e.on_site }]);
     }
 
     const leaveFull = new Set<string>();
@@ -427,10 +466,13 @@ export class AttendanceService implements OnModuleInit {
       }
     }
     const od = new Set<string>();
+    const odMeeting = new Map<string, string>();
     for (const o of (await q.query(
-      `select employee_id, from_date, to_date from od_requests
+      `select employee_id, from_date, to_date, meeting_time from od_requests
         where kind = 'od' and status = 'approved' and employee_id = any($1::uuid[]) and from_date <= $3 and to_date >= $2`, [employeeIds, from, to])).rows) {
       for (const date of eachDate(o.from_date < from ? from : o.from_date, o.to_date > to ? to : o.to_date)) od.add(`${o.employee_id}|${date}`);
+      // A reporting time given on the request is for its first day.
+      if (o.meeting_time && o.from_date >= from && o.from_date <= to) odMeeting.set(`${o.employee_id}|${o.from_date}`, hhmm(o.meeting_time));
     }
     const permissions = new Map<string, { from: string; to: string }[]>();
     for (const p of (await q.query(
@@ -450,7 +492,7 @@ export class AttendanceService implements OnModuleInit {
           employed: (!emp.date_of_joining || date >= emp.date_of_joining) && (!emp.exit_date || date <= emp.exit_date) &&
             (!s.attendance_start_date || date >= s.attendance_start_date),
           holiday: holidays.has(date), weeklyOff: s.weekly_off_days.includes(dayOfWeek(date)),
-          leaveFull: leaveFull.has(key), leaveHalf: leaveHalf.has(key), od: od.has(key), selfieRequired: s.selfie_required,
+          leaveFull: leaveFull.has(key), leaveHalf: leaveHalf.has(key), od: od.has(key), odMeetingTime: odMeeting.get(key) ?? null, selfieRequired: s.selfie_required,
           permissions: permissions.get(key) ?? [], events: events.get(key) ?? [],
         });
         if (result) out.get(id)!.set(date, result);

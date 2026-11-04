@@ -57,6 +57,8 @@ export default function AdminAttendancePage() {
 
       <BiometricSetup />
 
+      <PresenceReport />
+
       <Section title="Monthly register">
         <p className="mb-3 max-w-prose text-sm text-muted">Download every employee's day-by-day attendance for a month as a spreadsheet file (CSV), for payroll and records.</p>
         <div className="flex flex-wrap items-end gap-3">
@@ -76,6 +78,36 @@ export default function AdminAttendancePage() {
 
       <FenceDialog target={editing} onClose={() => setEditing(null)} onDone={() => { setEditing(null); void fences.reload(); }} />
     </div>
+  );
+}
+
+interface PresenceRow { id: string; employeeName: string; empCode: string; status: 'outside' | 'missed'; askedAt: string; distanceM: number | null; secondAsk: boolean }
+
+/** Random location checks that came back from outside the work location or were not answered. Only HR sees this. */
+function PresenceReport() {
+  const [date, setDate] = useState(todayIst());
+  const rows = useApi<PresenceRow[]>(`/attendance/presence/report?date=${date}`);
+  return (
+    <Section title="Random location checks">
+      <p className="mb-3 max-w-prose text-sm text-muted">Checks answered from outside the work location, or not answered. Managers do not see these. Anyone who misses a check is asked once more 15 minutes later.</p>
+      <div className="mb-3 max-w-xs"><Field label="Day"><Input type="date" max={todayIst()} value={date} onChange={(e) => setDate(e.target.value || todayIst())} /></Field></div>
+      {rows.loading && !rows.data && <Loading />}
+      {rows.error && <ErrorNote error={rows.error} retry={rows.reload} />}
+      {rows.data && rows.data.length === 0 && <Empty title="Nothing to review">Every check that day was answered from the right place.</Empty>}
+      {rows.data && rows.data.length > 0 && (
+        <Panel className="divide-y divide-line">
+          {rows.data.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+              <span><strong>{r.employeeName}</strong> <span className="text-muted">{r.empCode}</span></span>
+              <span className="flex items-center gap-2">
+                <span className="text-muted">{new Date(r.askedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })}{r.secondAsk ? ' · second ask' : ''}</span>
+                {r.status === 'missed' ? <Badge tone="marigold">Not answered</Badge> : <Badge tone="marigold">Outside{r.distanceM !== null ? `, ${r.distanceM} m away` : ''}</Badge>}
+              </span>
+            </div>
+          ))}
+        </Panel>
+      )}
+    </Section>
   );
 }
 

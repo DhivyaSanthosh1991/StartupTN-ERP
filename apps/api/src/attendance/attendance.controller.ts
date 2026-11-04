@@ -20,6 +20,13 @@ const punchBody = z.object({
   selfie: z.string().max(450_000).optional(),
 });
 
+const breakBody = z.object({ kind: z.enum(['lunch', 'other']).default('lunch'), note: z.string().trim().max(200).optional() });
+const presenceBody = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracyM: z.number().min(0).max(1_000_000).optional(),
+});
+
 const monthQuery = z.object({ month: monthStr.optional() });
 const dayQuery = z.object({ date: dateStr.optional() });
 const trailQuery = z.object({ employeeId: uuid.optional(), date: dateStr.optional() });
@@ -73,6 +80,36 @@ export class AttendanceController {
   @HttpCode(200)
   checkOut(@CurrentUser() user: AuthUser, @Body(zodPipe(punchBody)) body: z.infer<typeof punchBody>) {
     return this.attendance.punch(user, 'check_out', body);
+  }
+
+  @Post('attendance/break/start')
+  @HttpCode(200)
+  startBreak(@CurrentUser() user: AuthUser, @Body(zodPipe(breakBody)) body: z.infer<typeof breakBody>) {
+    return this.attendance.startBreak(user, body);
+  }
+
+  @Post('attendance/break/end')
+  @HttpCode(200)
+  endBreak(@CurrentUser() user: AuthUser) {
+    return this.attendance.endBreak(user);
+  }
+
+  /** The portal asks this about once a minute while it is open. Null means nothing to answer. */
+  @Get('attendance/presence')
+  async presence(@CurrentUser() user: AuthUser) {
+    return { check: await this.attendance.presenceCheck(user) };
+  }
+
+  @Get('attendance/presence/report')
+  @Roles('hr_admin')
+  presenceReport(@Query(zodPipe(dayQuery)) q: z.infer<typeof dayQuery>) {
+    return this.attendance.presenceReport(q.date ?? todayIst());
+  }
+
+  @Post('attendance/presence/:id')
+  @HttpCode(200)
+  answerPresence(@CurrentUser() user: AuthUser, @Param(zodPipe(idParam)) p: z.infer<typeof idParam>, @Body(zodPipe(presenceBody)) body: z.infer<typeof presenceBody>) {
+    return this.attendance.answerPresence(user, p.id, body);
   }
 
   /** The photo taken at one punch (owner, reporting managers and HR only). */

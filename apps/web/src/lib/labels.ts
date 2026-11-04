@@ -32,6 +32,7 @@ export const FLAG_LABEL: Record<string, string> = {
   half_day_leave: 'Half-day leave',
   no_attendance: 'Came in for no part of the working half',
   od_no_selfie: 'On duty, but no selfie check-in',
+  late_for_duty: 'Reached the duty venue after the time given',
 };
 
 /** Where a punch came from, in words. */
@@ -48,12 +49,12 @@ export const ATTENDANCE_METHOD: Record<string, string> = {
 export const flagLabel = (f: string) => FLAG_LABEL[f] ?? f.replace(/_/g, ' ');
 
 /** Flags a manager or HR should look at, as opposed to routine notes. */
-export const ATTENTION_FLAGS = new Set(['outside_geofence', 'impossible_travel', 'missing_checkout', 'low_accuracy', 'no_geofence', 'od_no_selfie']);
+export const ATTENTION_FLAGS = new Set(['outside_geofence', 'impossible_travel', 'missing_checkout', 'low_accuracy', 'no_geofence', 'od_no_selfie', 'late_for_duty']);
 
 export const DAY_PART: Record<string, string> = { full: 'Full day', first_half: 'First half', second_half: 'Second half' };
 
 export const REQUEST_TYPE_LABEL: Record<string, string> = {
-  leave: 'Leave', od: 'On duty', permission: 'Permission', regularisation: 'Attendance correction',
+  leave: 'Leave', od: 'On duty', permission: 'Permission', regularisation: 'Attendance correction', od_home: 'Going home after duty',
 };
 
 export const EMPLOYMENT_TYPE: Record<string, string> = { permanent: 'Permanent', contract: 'Contract', consultant: 'Consultant', intern: 'Intern' };

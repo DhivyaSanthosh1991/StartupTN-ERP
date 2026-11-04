@@ -26,8 +26,15 @@ export interface DayView {
   flags: string[];
 }
 
+export interface BreakState {
+  usedMinutes: number;
+  onBreak: { id: string; kind: 'lunch' | 'other'; since: string } | null;
+  breaks: { id: string; kind: 'lunch' | 'other'; note: string | null; startedAt: string; endedAt: string | null; minutes: number }[];
+}
+
 export interface TodayAttendance {
   date: string;
+  breaks?: BreakState;
   state: 'not_started' | 'checked_in' | 'checked_out';
   canCheckIn: boolean;
   canCheckOut: boolean;
@@ -98,6 +105,9 @@ export interface OdRequest {
   fromDate: string; toDate: string; fromTime: string | null; toTime: string | null; minutes: number | null;
   location: string | null; purpose: string; status: string; approvalRequestId: string | null;
   currentApprover: string | null; lastComment: string | null; createdAt: string;
+  meetingTime?: string | null;
+  stops?: { location: string; meetingTime: string | null; date: string }[];
+  siteVisits?: { type: 'check_in' | 'check_out'; at: string; latitude: number | null; longitude: number | null }[];
 }
 
 export interface RegularisationRequest {

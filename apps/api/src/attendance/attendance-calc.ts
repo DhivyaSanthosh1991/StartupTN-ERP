@@ -67,6 +67,8 @@ export interface PunchEvent {
   flags: string[];
   /** A selfie was taken at this punch (even if the photo has since been deleted). */
   selfie?: boolean;
+  /** The punch was made at a duty location (not back at the person's own office). */
+  site?: boolean;
 }
 
 export interface Sessions {
@@ -119,6 +121,8 @@ export interface DayInput {
   leaveFull: boolean;
   leaveHalf: boolean;
   od: boolean;
+  /** The fixed time the person must reach the duty venue (first day of the duty), if they gave one. */
+  odMeetingTime?: string | null;
   /** Selfies are required, so a past on-duty day with no selfie punch is flagged. */
   selfieRequired?: boolean;
   /** Approved permissions that day, as clock times. */
@@ -171,6 +175,9 @@ export function deriveDayStatus(input: DayInput): DayResult | null {
     // for the manager and HR; the day still counts as on duty.
     const proved = live.some((e) => e.selfie || e.flags.includes('regularised'));
     if (input.selfieRequired && date < today && !proved) flags.add('od_no_selfie');
+    // With a stated reporting time, arriving well after it is noted. Not visiting the office first is never flagged.
+    const firstSite = live.filter((e) => e.type === 'check_in' && e.site).sort((a, b) => a.at.getTime() - b.at.getTime())[0];
+    if (input.odMeetingTime && firstSite && istMinutes(firstSite.at) > minutesOf(input.odMeetingTime) + rules.grace_minutes) flags.add('late_for_duty');
     return result('od');
   }
 

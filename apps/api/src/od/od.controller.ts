@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { AuthUser, CurrentUser } from '../common/auth.types';
 import { todayIst } from '../common/dates';
 import { dateStr, timeStr, uuid, zodPipe } from '../common/zod.pipe';
+import { OdHomeService } from './od-home.service';
 import { OdService } from './od.service';
 
 const text = (max: number) => z.string().trim().max(max);
@@ -11,7 +12,8 @@ const odBody = z.object({
   kind: z.literal('od'),
   fromDate: dateStr,
   toDate: dateStr.optional(),
-  location: text(200).optional(),
+  location: text(200).min(3, 'Please say where the duty is, for example the venue and city'),
+  meetingTime: timeStr.optional(),
   purpose: text(500).min(3, 'Please say what the on-duty work is'),
 });
 const permissionBody = z.object({
@@ -31,10 +33,38 @@ const listQuery = z.object({
 const teamQuery = listQuery.extend({ status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).optional() });
 const quotaQuery = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM').optional() });
 const idParam = z.object({ id: uuid });
+const homeBody = z.object({ reason: text(300).optional() });
+const stopBody = z.object({
+  location: text(200).min(3, 'Please say where the next meeting is, for example the venue and city'),
+  purpose: text(300).optional(),
+  meetingTime: timeStr.optional(),
+});
 
 @Controller('od')
 export class OdController {
-  constructor(private readonly od: OdService) {}
+  constructor(private readonly od: OdService, private readonly home: OdHomeService) {}
+
+  /** Where today's on-duty work stands: at the site, finished, and the way home. */
+  @Get('today')
+  today(@CurrentUser() user: AuthUser) {
+    return this.home.today(user);
+  }
+
+  @Post('stops')
+  addStop(@CurrentUser() user: AuthUser, @Body(zodPipe(stopBody)) body: z.infer<typeof stopBody>) {
+    return this.home.addStop(user, body);
+  }
+
+  @Post('return-home')
+  returnHome(@CurrentUser() user: AuthUser, @Body(zodPipe(homeBody)) body: z.infer<typeof homeBody>) {
+    return this.home.apply(user, body);
+  }
+
+  @Post('return-home/:id/cancel')
+  @HttpCode(200)
+  cancelReturnHome(@CurrentUser() user: AuthUser, @Param(zodPipe(idParam)) p: z.infer<typeof idParam>) {
+    return this.home.cancel(user, p.id);
+  }
 
   @Post('requests')
   apply(@CurrentUser() user: AuthUser, @Body(zodPipe(applyBody)) body: z.infer<typeof applyBody>) {
@@ -45,6 +75,7 @@ export class OdController {
       fromTime: body.kind === 'permission' ? body.fromTime : undefined,
       toTime: body.kind === 'permission' ? body.toTime : undefined,
       location: body.kind === 'od' ? body.location : undefined,
+      meetingTime: body.kind === 'od' ? body.meetingTime : undefined,
       purpose: body.purpose,
     });
   }

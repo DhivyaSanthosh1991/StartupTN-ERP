@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { BalanceRow } from '@/components/balances';
+import { BreakCard } from '@/components/break-card';
+import { DutyCard } from '@/components/duty-card';
 import { PunchPanel } from '@/components/punch';
 import { Badge, ErrorNote, Loading, Notice, Panel, Section, cx } from '@/components/ui';
 import { useApi } from '@/lib/api';
@@ -43,6 +45,8 @@ export default function HomePage() {
       </header>
 
       <PunchPanel today={attendance} onChange={(t) => { setToday(t); void reload(); }} />
+      <BreakCard today={attendance} />
+      {attendance.info.od && <DutyCard refreshKey={`${attendance.events.length}`} />}
 
       <div className="mt-5 space-y-2">
         {approvals.waiting > 0 && (
