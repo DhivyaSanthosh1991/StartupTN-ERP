@@ -57,6 +57,8 @@ export default function AdminAttendancePage() {
 
       <BiometricSetup />
 
+      <AwayReport />
+
       <PresenceReport />
 
       <Section title="Monthly register">
@@ -102,6 +104,61 @@ function PresenceReport() {
               <span className="flex items-center gap-2">
                 <span className="text-muted">{new Date(r.askedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })}{r.secondAsk ? ' · second ask' : ''}</span>
                 {r.status === 'missed' ? <Badge tone="marigold">Not answered</Badge> : <Badge tone="marigold">Outside{r.distanceM !== null ? `, ${r.distanceM} m away` : ''}</Badge>}
+              </span>
+            </div>
+          ))}
+        </Panel>
+      )}
+    </Section>
+  );
+}
+
+interface AwayRow { id: string; employeeName: string; empCode: string; leftAt: string; returnedAt: string | null; minutesAway: number; reasonKind: 'official' | 'break' | 'personal' | 'other' | null; reasonNote: string | null }
+interface LiveRow { employeeId: string; employeeName: string; empCode: string; minutesAgo: number | null; place: 'break' | 'duty' | 'inside' | 'outside' | 'unknown'; distanceM: number | null }
+const REASON: Record<string, string> = { official: 'Official work', break: 'Break', personal: 'Personal', other: 'Other' };
+const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' });
+
+/** Who has left the office area while checked in, with what they said, and who is checked in now. HR only. */
+function AwayReport() {
+  const [date, setDate] = useState(todayIst());
+  const alerts = useApi<AwayRow[]>(`/admin/tracking/alerts?date=${date}`);
+  const live = useApi<LiveRow[]>('/admin/tracking/live');
+  return (
+    <Section title="Left the office area" action={<Button size="sm" variant="secondary" onClick={() => { alerts.reload(); live.reload(); }}>Refresh</Button>}>
+      <p className="mb-3 max-w-prose text-sm text-muted">People outside their work location while checked in, with no on-duty, break or permission. Readings arrive while the portal is open on their phone, so someone with the app closed shows their last known place.</p>
+      <div className="mb-3 max-w-xs"><Field label="Day"><Input type="date" max={todayIst()} value={date} onChange={(e) => setDate(e.target.value || todayIst())} /></Field></div>
+      {alerts.loading && !alerts.data && <Loading />}
+      {alerts.error && <ErrorNote error={alerts.error} retry={alerts.reload} />}
+      {alerts.data && alerts.data.length === 0 && <Empty title="No one has left">Nobody was outside their work location without a reason that day.</Empty>}
+      {alerts.data && alerts.data.length > 0 && (
+        <Panel className="divide-y divide-line">
+          {alerts.data.map((r) => (
+            <div key={r.id} className="space-y-1 p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span><strong>{r.employeeName}</strong> <span className="text-muted">{r.empCode}</span></span>
+                <span className="flex items-center gap-2">
+                  <span className="text-muted">Left {clock(r.leftAt)}{r.returnedAt ? `, back ${clock(r.returnedAt)}` : ', still away'} · {r.minutesAway} min</span>
+                  {r.reasonKind ? <Badge tone="peacock">{REASON[r.reasonKind]}</Badge> : <Badge tone="marigold">No reason given</Badge>}
+                </span>
+              </div>
+              {r.reasonNote && <p className="text-muted">{r.reasonNote}</p>}
+            </div>
+          ))}
+        </Panel>
+      )}
+
+      <h3 className="mb-2 mt-6 font-display text-lg font-semibold">Checked in now</h3>
+      {live.data && live.data.length === 0 && <Empty title="Nobody is checked in">People who are checked in appear here with their last reading.</Empty>}
+      {live.data && live.data.length > 0 && (
+        <Panel className="divide-y divide-line">
+          {live.data.map((r) => (
+            <div key={r.employeeId} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+              <span><strong>{r.employeeName}</strong> <span className="text-muted">{r.empCode}</span></span>
+              <span className="flex items-center gap-2">
+                <span className="text-muted">{r.minutesAgo === null ? 'No reading yet' : `Last reading ${r.minutesAgo} min ago`}</span>
+                <Badge tone={r.place === 'outside' ? 'marigold' : r.place === 'inside' ? 'peacock' : 'neutral'}>
+                  {{ inside: 'At the office', outside: `Outside${r.distanceM !== null ? `, ${(r.distanceM / 1000).toFixed(1)} km away` : ''}`, break: 'On a break', duty: 'On duty', unknown: 'Unknown' }[r.place]}
+                </Badge>
               </span>
             </div>
           ))}

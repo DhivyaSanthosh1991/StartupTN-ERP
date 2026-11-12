@@ -10,6 +10,7 @@ interface Settings {
   permission_max_minutes: number; permission_monthly_limit: number; geofence_low_accuracy_m: number;
   attendance_start_date: string | null;
   selfie_required: boolean; selfie_retention_days: number;
+  tracking_enabled: boolean; tracking_interval_minutes: number; tracking_away_grace_minutes: number; tracking_retention_days: number;
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -90,6 +91,19 @@ function SettingsForm({ initial, onSaved }: { initial: Settings; onSaved: () => 
         <Field label="Keep selfies for (days)" hint="After this, the photo is deleted. The check-in time and location stay. Between 7 and 365.">
           <Input type="number" min={7} max={365} value={s.selfie_retention_days} onChange={num('selfie_retention_days')} />
         </Field>
+      </Panel>
+
+      <Panel className="grid gap-4 p-5 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Check label="Share location while checked in, and report who leaves the office area" checked={s.tracking_enabled} onChange={(e) => setS({ ...s, tracking_enabled: e.target.checked })} />
+          <p className="mt-1 text-xs text-muted">
+            From check-in to check-out only, never during a break. People are told on screen while it is on. Anyone outside their work location for longer than the time below,
+            with no on-duty, break or permission, is shown to HR under Attendance setup, and is asked to say why. Readings come only while the portal is open on the phone.
+          </p>
+        </div>
+        <Field label="Send a reading every (minutes)" hint="Longer is easier on the phone's battery. Between 5 and 30."><Input type="number" min={5} max={30} value={s.tracking_interval_minutes} onChange={num('tracking_interval_minutes')} /></Field>
+        <Field label="Report after being away for (minutes)" hint="A short walk to the gate should not count. Between 5 and 120."><Input type="number" min={5} max={120} value={s.tracking_away_grace_minutes} onChange={num('tracking_away_grace_minutes')} /></Field>
+        <Field label="Keep location readings for (days)" hint="After this they are deleted. Alerts stay. Between 7 and 90."><Input type="number" min={7} max={90} value={s.tracking_retention_days} onChange={num('tracking_retention_days')} /></Field>
       </Panel>
 
       <Notice tone="indigo">Changes apply from now. Days already worked out for the past are not changed unless you rebuild the register under Attendance setup.</Notice>
