@@ -15,7 +15,14 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
         "CAMERA",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "ios": {
@@ -28,7 +35,12 @@
     },
     "plugins": [
       "expo-secure-store",
-      ["expo-camera", { "cameraPermission": "A selfie is taken when you check in or out." }],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A selfie is taken when you check in or out."
+        }
+      ],
       [
         "expo-location",
         {
@@ -40,7 +52,10 @@
       "expo-notifications"
     ],
     "extra": {
-      "apiUrl": "https://startuptn-erp.onrender.com"
+      "apiUrl": "https://startuptn-erp.onrender.com",
+      "eas": {
+        "projectId": "fc9b0ba7-3236-440d-ac69-dfb1e15838a8"
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, SafeAreaView, View } from 'react-native';
+import { ActivityIndicator, Platform, SafeAreaView, StatusBar as RNStatusBar, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { SessionProvider, useSession } from './auth';
@@ -20,7 +20,7 @@ function Root() {
 export default function App() {
   return (
     <SessionProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight ?? 24 : 0 }}>
         <StatusBar style="dark" />
         <Root />
       </SafeAreaView>

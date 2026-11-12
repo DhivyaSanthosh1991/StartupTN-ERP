@@ -15,7 +15,9 @@ const hm = (m: number) => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '
 async function readLocation() {
   const perm = await Location.requestForegroundPermissionsAsync();
   if (perm.status !== 'granted') throw new Error('Location is blocked. Allow location for this app in your phone settings, then try again.');
-  const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+  // Indoors a precise GPS fix can take minutes, so ask for a balanced reading (wifi and towers) and give up after 20 seconds.
+  const timeout = new Promise<never>((_, no) => setTimeout(() => no(new Error('Your phone could not find your location. Turn on location (GPS), move near a window or outside, then try again.')), 20_000));
+  const p = await Promise.race([Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }), timeout]);
   return { latitude: p.coords.latitude, longitude: p.coords.longitude, accuracyM: p.coords.accuracy ?? undefined };
 }
 
@@ -135,9 +137,8 @@ export function Home() {
       const loc = await readLocation();
       const next = await api<TodayAttendance>(`/attendance/${kind}`, { method: 'POST', body: { ...loc, source: 'mobile', ...(selfie ? { selfie } : {}) } });
       setToday(next);
-      const k = await api<TrackState>('/attendance/track');
-      setTrack(k);
-      await syncTracking(k);
+      setBusy(false); // the punch is saved; the tracking follow-up must never keep the button spinning
+      void api<TrackState>('/attendance/track').then((k) => { setTrack(k); return syncTracking(k); }).catch(() => {});
     } catch (e) {
       setError(errorText(e));
     } finally {
