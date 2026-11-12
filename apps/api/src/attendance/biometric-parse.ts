@@ -10,6 +10,8 @@
  * Times on the machine are India time with no zone.
  */
 
+import { isStatusReport, parseStatusReport } from './biometric-report';
+
 export interface ParsedPunch {
   /** The person's code on the machine. */
   code: string;
@@ -179,6 +181,9 @@ export function parseBiometricLog(raw: string, opts: { serials?: string[]; seria
   if (!text) return result;
   if (/&lt;|&gt;/.test(text) && !/^[<\[{]/.test(text)) text = decodeEntities(text);
   if (/&lt;/.test(text)) text = decodeEntities(text);
+
+  // The Excel "Monthly Status Report" saved as CSV: first and last punch of each day, per person.
+  if (isStatusReport(text)) return parseStatusReport(text, fallbackSerial);
 
   const records = text.startsWith('<') ? recordsFromXml(text) : /^[\[{]/.test(text) ? recordsFromJson(text) : null;
   if (records) {

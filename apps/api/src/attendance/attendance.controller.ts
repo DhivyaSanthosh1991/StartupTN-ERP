@@ -1,5 +1,6 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, Res, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
+import { AppOnlyGuard } from '../common/app-only.guard';
 import { AuthUser, CurrentUser, Roles } from '../common/auth.types';
 import { todayIst } from '../common/dates';
 import { badRequest } from '../common/errors';
@@ -26,6 +27,10 @@ const presenceBody = z.object({
   longitude: z.number().min(-180).max(180),
   accuracyM: z.number().min(0).max(1_000_000).optional(),
 });
+
+const explainBody = z
+  .object({ kind: z.enum(['official', 'break', 'personal', 'other']), note: z.string().trim().max(300).optional() })
+  .refine((b) => b.kind === 'break' || b.kind === 'personal' || !!b.note, { message: 'Please add a few words about where you are', path: ['note'] });
 
 const monthQuery = z.object({ month: monthStr.optional() });
 const dayQuery = z.object({ date: dateStr.optional() });
@@ -55,6 +60,8 @@ const biometricImportQuery = z.object({ serial: z.string().trim().max(60).option
 const rebuildBody = z.object({ from: dateStr, to: dateStr }).refine((b) => b.to >= b.from, 'to must not be before from');
 const refreshBody = z.object({ from: dateStr, to: dateStr }).refine((b) => b.to >= b.from, 'to must not be before from');
 
+const deviceBody = z.object({ pushToken: z.string().min(10).max(300), platform: z.enum(['android', 'ios']), appVersion: z.string().max(40).optional() }).strict();
+
 @Controller()
 export class AttendanceController {
   constructor(
@@ -71,24 +78,28 @@ export class AttendanceController {
   }
 
   @Post('attendance/check-in')
+  @UseGuards(AppOnlyGuard)
   @HttpCode(200)
   checkIn(@CurrentUser() user: AuthUser, @Body(zodPipe(punchBody)) body: z.infer<typeof punchBody>) {
     return this.attendance.punch(user, 'check_in', body);
   }
 
   @Post('attendance/check-out')
+  @UseGuards(AppOnlyGuard)
   @HttpCode(200)
   checkOut(@CurrentUser() user: AuthUser, @Body(zodPipe(punchBody)) body: z.infer<typeof punchBody>) {
     return this.attendance.punch(user, 'check_out', body);
   }
 
   @Post('attendance/break/start')
+  @UseGuards(AppOnlyGuard)
   @HttpCode(200)
   startBreak(@CurrentUser() user: AuthUser, @Body(zodPipe(breakBody)) body: z.infer<typeof breakBody>) {
     return this.attendance.startBreak(user, body);
   }
 
   @Post('attendance/break/end')
+  @UseGuards(AppOnlyGuard)
   @HttpCode(200)
   endBreak(@CurrentUser() user: AuthUser) {
     return this.attendance.endBreak(user);
@@ -96,8 +107,57 @@ export class AttendanceController {
 
   /** The portal asks this about once a minute while it is open. Null means nothing to answer. */
   @Get('attendance/presence')
+  @UseGuards(AppOnlyGuard)
   async presence(@CurrentUser() user: AuthUser) {
     return { check: await this.attendance.presenceCheck(user) };
+  }
+
+  /** Should the phone be sending readings now? Also carries an unanswered "why are you away" alert. */
+  @Get('attendance/track')
+  @UseGuards(AppOnlyGuard)
+  trackState(@CurrentUser() user: AuthUser) {
+    return this.attendance.trackingState(user);
+  }
+
+  /** One coarse reading. Ignored unless the person is checked in and not on a break. */
+  @Post('attendance/track')
+  @UseGuards(AppOnlyGuard)
+  @HttpCode(200)
+  trackPing(@CurrentUser() user: AuthUser, @Body(zodPipe(presenceBody)) body: z.infer<typeof presenceBody>) {
+    return this.attendance.trackingPing(user, body);
+  }
+
+  @Post('attendance/track/alerts/:id')
+  @UseGuards(AppOnlyGuard)
+  @HttpCode(200)
+  explainAway(@CurrentUser() user: AuthUser, @Param(zodPipe(idParam)) p: z.infer<typeof idParam>, @Body(zodPipe(explainBody)) body: z.infer<typeof explainBody>) {
+    return this.attendance.explainAway(user, p.id, body);
+  }
+
+  @Get('admin/tracking/alerts')
+  @Roles('hr_admin')
+  awayAlerts(@Query(zodPipe(dayQuery)) q: z.infer<typeof dayQuery>) {
+    return this.attendance.awayAlerts(q.date ?? todayIst());
+  }
+
+  @Get('admin/tracking/live')
+  @Roles('hr_admin')
+  liveLocations() {
+    return this.attendance.liveLocations();
+  }
+
+  /** The app tells the server which phone to send notifications to. */
+  @Post('devices')
+  @HttpCode(200)
+  async registerDevice(@CurrentUser() user: AuthUser, @Body(zodPipe(deviceBody)) body: z.infer<typeof deviceBody>) {
+    await this.attendance.registerDevice(user, body);
+    return { ok: true };
+  }
+
+  @Delete('devices')
+  @HttpCode(204)
+  async removeDevice(@CurrentUser() user: AuthUser, @Query(zodPipe(z.object({ token: z.string().min(10) }))) q: { token: string }) {
+    await this.attendance.removeDevice(user, q.token);
   }
 
   @Get('attendance/presence/report')
@@ -107,6 +167,7 @@ export class AttendanceController {
   }
 
   @Post('attendance/presence/:id')
+  @UseGuards(AppOnlyGuard)
   @HttpCode(200)
   answerPresence(@CurrentUser() user: AuthUser, @Param(zodPipe(idParam)) p: z.infer<typeof idParam>, @Body(zodPipe(presenceBody)) body: z.infer<typeof presenceBody>) {
     return this.attendance.answerPresence(user, p.id, body);

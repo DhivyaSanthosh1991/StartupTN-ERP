@@ -1,5 +1,6 @@
 import { BreaksService } from './breaks.service';
 import { PresenceService } from './presence.service';
+import { TrackingService } from './tracking.service';
 import { randomUUID } from 'crypto';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AuditService } from '../common/audit.service';
@@ -53,6 +54,7 @@ export class AttendanceService implements OnModuleInit {
     private readonly storage: StorageService,
     private readonly breaks: BreaksService,
     private readonly presence: PresenceService,
+    private readonly tracking: TrackingService,
   ) {}
 
   private readonly log = new Logger(AttendanceService.name);
@@ -209,6 +211,26 @@ export class AttendanceService implements OnModuleInit {
   /** Asked by the open portal about once a minute: is there a random location check waiting? */
   presenceCheck(user: AuthUser, now: Date = new Date(), random?: () => number) {
     return this.presence.poll(user, now, random, (q, date) => this.recompute(q, user.id, date, date, now));
+  }
+
+  trackingState(user: AuthUser, now: Date = new Date()) {
+    return this.tracking.state(user, now);
+  }
+
+  trackingPing(user: AuthUser, input: { latitude: number; longitude: number; accuracyM?: number }, now: Date = new Date()) {
+    return this.tracking.ping(user, input, now);
+  }
+
+  explainAway(user: AuthUser, id: string, input: { kind: 'official' | 'break' | 'personal' | 'other'; note?: string }, now: Date = new Date()) {
+    return this.tracking.explain(user, id, input, now);
+  }
+
+  awayAlerts(date: string, now: Date = new Date()) {
+    return this.tracking.alerts(date, now);
+  }
+
+  liveLocations(now: Date = new Date()) {
+    return this.tracking.live(now);
   }
 
   /** HR only: random location checks that came back from outside the work location or were not answered. */
@@ -375,6 +397,11 @@ export class AttendanceService implements OnModuleInit {
 
   /** Deletes photos older than the retention period. The punch, time and location stay; only the picture goes. */
   async purgeExpiredSelfies(now: Date = new Date()): Promise<{ removed: number }> {
+    try {
+      await this.tracking.purge(now); // old location readings go with the daily cleanup
+    } catch (err) {
+      this.log.warn(`Could not delete old location readings: ${(err as Error).message}`);
+    }
     const s = await this.settings.get();
     const cutoff = new Date(now.getTime() - s.selfie_retention_days * 86_400_000);
     let removed = 0;
@@ -549,6 +576,20 @@ export class AttendanceService implements OnModuleInit {
       }
     }
     return { employees: people.length, from, to, failed };
+  }
+
+  /** Remember which phone belongs to this person (one token is one phone, whoever last signed in on it). */
+  async registerDevice(user: AuthUser, input: { pushToken: string; platform: 'android' | 'ios'; appVersion?: string }) {
+    await this.db.query(
+      `insert into devices (employee_id, push_token, platform, app_version) values ($1, $2, $3, $4)
+       on conflict (push_token) do update set employee_id = excluded.employee_id, platform = excluded.platform,
+         app_version = excluded.app_version, last_seen_at = now()`,
+      [user.id, input.pushToken, input.platform, input.appVersion ?? null],
+    );
+  }
+
+  async removeDevice(user: AuthUser, token: string) {
+    await this.db.query(`delete from devices where employee_id = $1 and push_token = $2`, [user.id, token]);
   }
 }
 

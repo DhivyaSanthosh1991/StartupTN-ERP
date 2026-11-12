@@ -1,0 +1,8 @@
+{
+  "name": "startuptn-biometric-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Copies punches from the eTimeTrackLite database on the biometric PC to the StartupTN ERP.",
+  "scripts": { "inspect": "node bridge.js --inspect", "sync": "node bridge.js" },
+  "dependencies": { "mssql": "^11.0.1" }
+}

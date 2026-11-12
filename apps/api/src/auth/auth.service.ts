@@ -45,14 +45,15 @@ export class AuthService {
       throw forbidden('ACCOUNT_INACTIVE', 'This account is no longer active');
     }
     await this.audit.record({ actorId: emp.id, action: 'auth.login', entityType: 'employee', entityId: emp.id, after: { via } });
-    return { token: this.issueToken(emp.id), employeeId: emp.id as string, fullName: emp.full_name as string };
+    return { token: this.issueToken(emp.id), mobileToken: this.issueToken(emp.id, true), employeeId: emp.id as string, fullName: emp.full_name as string };
   }
 
-  issueToken(employeeId: string): string {
+  issueToken(employeeId: string, mobile = false): string {
     return jwt.sign({}, this.config.jwtSecret, {
       algorithm: 'HS256',
       subject: employeeId,
-      expiresIn: `${this.config.sessionHours}h`,
+      // a phone stays signed in far longer than a browser tab
+      expiresIn: mobile ? `${this.config.mobileSessionDays}d` : `${this.config.sessionHours}h`,
     });
   }
 }

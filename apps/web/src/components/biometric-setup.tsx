@@ -29,6 +29,18 @@ function describe(r: ImportResult): string {
   return `Read ${plural(r.rowsRead, 'row')}: ${parts.join(', ')}. ${plural(r.daysUpdated, 'attendance day')} updated.`;
 }
 
+/**
+ * A CSV or text file is sent as it is. An Excel file (the machine software's "Monthly Status Report", .xls or .xlsx) is turned
+ * into CSV text here in the browser, one block per sheet, and the server reads it the same way as any other export.
+ */
+async function readFileAsText(file: File): Promise<string> {
+  if (!/\.xlsx?$/i.test(file.name)) return file.text();
+  const XLSX = await import('xlsx');
+  const book = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  if (!book.SheetNames.length) throw new Error('That Excel file has no sheets');
+  return book.SheetNames.map((name) => XLSX.utils.sheet_to_csv(book.Sheets[name])).join('\n\n');
+}
+
 /** The head-office biometric machine: connection, importing a file, codes nobody owns, recent imports. */
 export function BiometricSetup() {
   const toast = useToast();
@@ -47,7 +59,7 @@ export function BiometricSetup() {
     setBusy('import');
     setResult(null);
     try {
-      const text = await file.text();
+      const text = await readFileAsText(file);
       const r = await api<ImportResult>(`/admin/attendance/biometric/import${serial.trim() ? `?serial=${encodeURIComponent(serial.trim())}` : ''}`, { method: 'POST', body: text, text: true });
       setResult({ tone: r.rejected || r.unmatched ? 'marigold' : 'peacock', text: describe(r) });
       setFile(null);
@@ -139,12 +151,12 @@ export function BiometricSetup() {
             <form onSubmit={importFile} className="space-y-3">
               <p className="font-medium">Import punches from a file</p>
               <p className="max-w-prose text-sm text-muted">
-                Export the punch log from the machine&apos;s software (a CSV or text file with the person&apos;s code and the date and time of each punch) and choose it here.
-                Importing the same file twice does no harm.
+                Choose an export from the machine&apos;s software: an Excel file (the Monthly Status Report, .xls or .xlsx), or a CSV or text file with the person&apos;s code and
+                the date and time of each punch. The Excel report gives each day&apos;s first and last punch. Importing the same file twice does no harm.
               </p>
               <div className="flex flex-wrap items-end gap-3">
                 <Field label="File">
-                  <input ref={fileRef} type="file" accept=".csv,.txt,.log,text/plain,text/csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  <input ref={fileRef} type="file" accept=".xls,.xlsx,.csv,.txt,.log,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                     className="block w-full max-w-xs text-sm file:mr-3 file:rounded-lg file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-wash" />
                 </Field>
                 <Field label="Machine serial number" hint="Optional, if the file does not say."><Input value={serial} onChange={(e) => setSerial(e.target.value)} className="w-56" /></Field>

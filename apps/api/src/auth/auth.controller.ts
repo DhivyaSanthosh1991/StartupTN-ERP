@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { z } from 'zod';
 import { Public, SESSION_COOKIE } from '../common/auth.types';
@@ -30,19 +30,17 @@ export class AuthController {
   @Public()
   @Post('google')
   @HttpCode(200)
-  async google(@Body(zodPipe(googleBody)) body: z.infer<typeof googleBody>, @Res({ passthrough: true }) res: Response) {
+  async google(@Body(zodPipe(googleBody)) body: z.infer<typeof googleBody>, @Headers('x-client') client: string | undefined, @Res({ passthrough: true }) res: Response) {
     const s = await this.auth.loginWithGoogle(body.idToken);
-    this.setCookie(res, s.token);
-    return { employeeId: s.employeeId, fullName: s.fullName };
+    return this.reply(res, s, client);
   }
 
   @Public()
   @Post('dev-login')
   @HttpCode(200)
-  async devLogin(@Body(zodPipe(devBody)) body: z.infer<typeof devBody>, @Res({ passthrough: true }) res: Response) {
+  async devLogin(@Body(zodPipe(devBody)) body: z.infer<typeof devBody>, @Headers('x-client') client: string | undefined, @Res({ passthrough: true }) res: Response) {
     const s = await this.auth.devLogin(body.email);
-    this.setCookie(res, s.token);
-    return { employeeId: s.employeeId, fullName: s.fullName };
+    return this.reply(res, s, client);
   }
 
   @Public()
@@ -50,6 +48,13 @@ export class AuthController {
   @HttpCode(204)
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie(SESSION_COOKIE, { path: '/' });
+  }
+
+  /** The app gets its token in the reply (no cookies on a phone); browsers get a cookie only. */
+  private reply(res: Response, s: { token: string; mobileToken: string; employeeId: string; fullName: string }, client?: string) {
+    if (client === 'mobile') return { employeeId: s.employeeId, fullName: s.fullName, token: s.mobileToken };
+    this.setCookie(res, s.token);
+    return { employeeId: s.employeeId, fullName: s.fullName };
   }
 
   private setCookie(res: Response, token: string) {

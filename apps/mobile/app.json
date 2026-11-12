@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "StartupTN Staff",
+    "slug": "startuptn-staff",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "in.startuptn.staff",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "in.startuptn.staff",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Your location is read when you check in or out, and between check-in and check-out to tell HR if you leave the office.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Between check-in and check-out the app notes roughly where you are so HR can see if you leave the office without a reason. It stops when you check out.",
+        "NSCameraUsageDescription": "A selfie is taken when you check in or out."
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A selfie is taken when you check in or out."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Between check-in and check-out the app notes roughly where you are so HR can see if you leave the office without a reason."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "extra": {
+      "apiUrl": "https://startuptn-erp.onrender.com",
+      "eas": {
+        "projectId": "fc9b0ba7-3236-440d-ac69-dfb1e15838a8"
+      }
+    },
+    "owner": "startuptn"
+  }
+}

@@ -12,6 +12,8 @@ export interface AppConfig {
   databaseSsl: DatabaseSsl;
   jwtSecret: string;
   sessionHours: number;
+  mobileSessionDays: number;
+  requireMobileApp: boolean;
   googleClientId: string;
   allowedEmailDomain: string;
   devLogin: boolean;
@@ -21,6 +23,8 @@ export interface AppConfig {
   storageDir: string;
   awsRegion: string;
   jobsToken: string;
+  /** Secret the small program on the biometric PC sends with the punches it pushes. Empty means pushing is off. */
+  biometricPushToken: string;
   webOrigin: string;
   trustProxyHops: number;
   emailDriver: 'log' | 'ses';
@@ -42,6 +46,8 @@ const schema = z.object({
   DATABASE_SSL: z.enum(['off', 'verify', 'no-verify']).default('off'),
   JWT_SECRET: z.string().min(16),
   SESSION_HOURS: z.coerce.number().default(12),
+  MOBILE_SESSION_DAYS: z.coerce.number().default(60),
+  REQUIRE_MOBILE_APP: z.enum(['true', 'false']).default('false'),
   GOOGLE_CLIENT_ID: z.string().default(''),
   ALLOWED_EMAIL_DOMAIN: z.string().default('startuptn.in'),
   AUTH_DEV_LOGIN: z.string().default('false'),
@@ -50,6 +56,7 @@ const schema = z.object({
   LOCAL_STORAGE_DIR: z.string().default('data/uploads'),
   AWS_REGION: z.string().default('ap-south-1'),
   JOBS_TOKEN: z.string().default(''),
+  BIOMETRIC_PUSH_TOKEN: z.string().default(''),
   WEB_ORIGIN: z.string().default('http://localhost:3000'),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
   EMAIL_DRIVER: z.enum(['log', 'ses']).default('log'),
@@ -99,6 +106,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseSsl: e.DATABASE_SSL,
     jwtSecret: e.JWT_SECRET,
     sessionHours: e.SESSION_HOURS,
+    mobileSessionDays: e.MOBILE_SESSION_DAYS,
+    requireMobileApp: e.REQUIRE_MOBILE_APP === 'true',
     googleClientId: e.GOOGLE_CLIENT_ID,
     allowedEmailDomain: e.ALLOWED_EMAIL_DOMAIN.toLowerCase(),
     // Dev login can never be switched on in production, whatever the env says.
@@ -108,6 +117,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     storageDir: e.LOCAL_STORAGE_DIR,
     awsRegion: e.AWS_REGION,
     jobsToken: e.JOBS_TOKEN,
+    biometricPushToken: e.BIOMETRIC_PUSH_TOKEN,
     webOrigin: e.WEB_ORIGIN,
     trustProxyHops: e.TRUST_PROXY_HOPS,
     emailDriver: e.EMAIL_DRIVER,
