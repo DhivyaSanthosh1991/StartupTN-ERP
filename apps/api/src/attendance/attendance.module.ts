@@ -7,12 +7,13 @@ import { AttendanceService } from './attendance.service';
 import { BiometricService } from './biometric.service';
 import { BreaksService } from './breaks.service';
 import { PresenceService } from './presence.service';
+import { TrackingService } from './tracking.service';
 import { RegularisationService } from './regularisation.service';
 
 @Module({
   imports: [ApprovalsModule, EmployeesModule, DocumentsModule],
   controllers: [AttendanceController],
-  providers: [AttendanceService, RegularisationService, BiometricService, BreaksService, PresenceService],
+  providers: [AttendanceService, RegularisationService, BiometricService, BreaksService, PresenceService, TrackingService],
   exports: [AttendanceService, RegularisationService, BiometricService],
 })
 export class AttendanceModule {}

@@ -26,6 +26,10 @@ const settingsBody = z
     presence_checks_per_day: int(0, 6),
     presence_response_minutes: int(2, 60),
     presence_min_gap_minutes: int(15, 480),
+    tracking_enabled: z.boolean(),
+    tracking_interval_minutes: int(5, 30),
+    tracking_away_grace_minutes: int(5, 120),
+    tracking_retention_days: int(7, 90),
   })
   .partial()
   .strict();
