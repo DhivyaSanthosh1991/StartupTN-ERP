@@ -29,6 +29,7 @@ export const testConfig: AppConfig = {
   jobsToken: 'test-jobs-token-1234567890',
   mobileSessionDays: 60,
   requireMobileApp: false,
+  pushDriver: 'log',
   biometricPushToken: 'test-push-token-1234567890',
   webOrigin: 'http://localhost:3000',
   trustProxyHops: 1,

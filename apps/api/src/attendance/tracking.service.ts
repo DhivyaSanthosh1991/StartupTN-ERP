@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AuthUser } from '../common/auth.types';
 import { istDate, istMinutes, minutesOf } from '../common/dates';
 import { conflict, notFound } from '../common/errors';
+import { PushService } from '../common/push.service';
 import { SettingsService } from '../common/settings.service';
 import { Db, Queryable } from '../db/db.service';
 import { Fence, haversineMeters, matchGeofence, pairSessions } from './attendance-calc';
@@ -29,7 +30,7 @@ export type AwayKind = 'official' | 'break' | 'personal' | 'other';
  */
 @Injectable()
 export class TrackingService {
-  constructor(private readonly db: Db, private readonly settings: SettingsService, private readonly breaks: BreaksService) {}
+  constructor(private readonly db: Db, private readonly settings: SettingsService, private readonly breaks: BreaksService, private readonly push: PushService) {}
 
   /** Is the phone expected to be sending readings right now, and is there an unanswered alert? */
   async state(user: AuthUser, now: Date = new Date(), q: Queryable = this.db) {
@@ -50,6 +51,7 @@ export class TrackingService {
     const s = await this.settings.get();
     if (!s.tracking_enabled) return { recorded: false, ...(await this.state(user, now)) };
 
+    let raisedNow = false;
     const recorded = await this.db.tx(async (q) => {
       await q.query('select pg_advisory_xact_lock(hashtext($1))', [`track:${user.id}`]);
       const ctx = await this.context(q, user.id, now);
@@ -87,11 +89,20 @@ export class TrackingService {
             and recorded_at > coalesce((select max(recorded_at) from location_pings where employee_id = $1 and work_date = $2 and within_fence = true), '-infinity')`,
         [user.id, ctx.date])).rows[0]?.t as Date | undefined;
       if (!since || now.getTime() - since.getTime() < s.tracking_away_grace_minutes * 60_000) return true;
-      await q.query(
-        `insert into away_alerts (employee_id, work_date, left_at, raised_at) values ($1,$2,$3,$4) on conflict do nothing`,
+      const inserted = await q.query(
+        `insert into away_alerts (employee_id, work_date, left_at, raised_at) values ($1,$2,$3,$4) on conflict do nothing returning id`,
         [user.id, ctx.date, since, now]);
+      raisedNow = inserted.rows.length > 0;
       return true;
     });
+    // The phone may be locked or the app closed: make sure the question reaches it.
+    if (raisedNow) {
+      await this.push.toEmployee(user.id, {
+        title: 'You seem to be away from the office',
+        body: 'Open the app and tell us why (official work, break or personal).',
+        data: { type: 'away' },
+      });
+    }
     return { recorded, ...(await this.state(user, now)) };
   }
 

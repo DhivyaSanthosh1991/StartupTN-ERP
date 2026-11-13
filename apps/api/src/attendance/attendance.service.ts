@@ -1,5 +1,6 @@
 import { BreaksService } from './breaks.service';
 import { PresenceService } from './presence.service';
+import { PushService } from '../common/push.service';
 import { TrackingService } from './tracking.service';
 import { randomUUID } from 'crypto';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
@@ -55,6 +56,7 @@ export class AttendanceService implements OnModuleInit {
     private readonly breaks: BreaksService,
     private readonly presence: PresenceService,
     private readonly tracking: TrackingService,
+    private readonly push: PushService,
   ) {}
 
   private readonly log = new Logger(AttendanceService.name);
@@ -211,6 +213,36 @@ export class AttendanceService implements OnModuleInit {
   /** Asked by the open portal about once a minute: is there a random location check waiting? */
   presenceCheck(user: AuthUser, now: Date = new Date(), random?: () => number) {
     return this.presence.poll(user, now, random, (q, date) => this.recompute(q, user.id, date, date, now));
+  }
+
+  /**
+   * Run every minute by the scheduler: for each person who is checked in and has the app, the same random
+   * chance the open portal uses decides whether a presence check starts, and a started check is pushed to
+   * their phone so it reaches them even when the app is closed.
+   */
+  async pushPresenceChecks(now: Date = new Date(), random: () => number = Math.random) {
+    const date = istDate(now);
+    const rows = await this.db.rows(
+      `select distinct on (e.employee_id) e.employee_id, e.event_type
+         from attendance_events e
+        where e.work_date = $1 and exists (select 1 from devices d where d.employee_id = e.employee_id)
+        order by e.employee_id, e.event_at desc`, [date]);
+    let pushed = 0;
+    for (const r of rows) {
+      if (r.event_type !== 'check_in') continue;
+      const id = r.employee_id as string;
+      const before = (await this.db.one(`select id from presence_checks where employee_id = $1 and status = 'pending'`, [id]))?.id;
+      const user = { id } as AuthUser;
+      const check = await this.presence.poll(user, now, random, (q, d) => this.recompute(q, id, d, d, now));
+      if (check && check.id !== before) {
+        pushed += (await this.push.toEmployee(id, {
+          title: 'Are you at your work location?',
+          body: 'Open the app and confirm. Please answer within a few minutes.',
+          data: { type: 'presence', id: check.id },
+        })) > 0 ? 1 : 0;
+      }
+    }
+    return { checkedIn: rows.filter((r) => r.event_type === 'check_in').length, pushed };
   }
 
   trackingState(user: AuthUser, now: Date = new Date()) {

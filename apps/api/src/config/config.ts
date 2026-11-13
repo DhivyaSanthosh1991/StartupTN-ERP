@@ -14,6 +14,7 @@ export interface AppConfig {
   sessionHours: number;
   mobileSessionDays: number;
   requireMobileApp: boolean;
+  pushDriver: 'expo' | 'log';
   googleClientId: string;
   allowedEmailDomain: string;
   devLogin: boolean;
@@ -48,6 +49,7 @@ const schema = z.object({
   SESSION_HOURS: z.coerce.number().default(12),
   MOBILE_SESSION_DAYS: z.coerce.number().default(60),
   REQUIRE_MOBILE_APP: z.enum(['true', 'false']).default('false'),
+  PUSH_DRIVER: z.enum(['expo', 'log']).default('expo'),
   GOOGLE_CLIENT_ID: z.string().default(''),
   ALLOWED_EMAIL_DOMAIN: z.string().default('startuptn.in'),
   AUTH_DEV_LOGIN: z.string().default('false'),
@@ -108,6 +110,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     sessionHours: e.SESSION_HOURS,
     mobileSessionDays: e.MOBILE_SESSION_DAYS,
     requireMobileApp: e.REQUIRE_MOBILE_APP === 'true',
+    pushDriver: e.PUSH_DRIVER,
     googleClientId: e.GOOGLE_CLIENT_ID,
     allowedEmailDomain: e.ALLOWED_EMAIL_DOMAIN.toLowerCase(),
     // Dev login can never be switched on in production, whatever the env says.

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ApprovalsModule } from '../approvals/approvals.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { EmployeesModule } from '../employees/employees.module';
+import { PushService } from '../common/push.service';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { BiometricService } from './biometric.service';
@@ -13,7 +14,7 @@ import { RegularisationService } from './regularisation.service';
 @Module({
   imports: [ApprovalsModule, EmployeesModule, DocumentsModule],
   controllers: [AttendanceController],
-  providers: [AttendanceService, RegularisationService, BiometricService, BreaksService, PresenceService, TrackingService],
-  exports: [AttendanceService, RegularisationService, BiometricService],
+  providers: [AttendanceService, RegularisationService, BiometricService, BreaksService, PresenceService, TrackingService, PushService],
+  exports: [AttendanceService, RegularisationService, BiometricService, PushService],
 })
 export class AttendanceModule {}

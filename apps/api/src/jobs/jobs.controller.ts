@@ -68,6 +68,15 @@ export class JobsController {
     return this.attendance.runNightly();
   }
 
+  /** Every minute in office hours: starts the random presence checks and pushes them to phones. */
+  @Public()
+  @Post('presence-checks')
+  @HttpCode(200)
+  presenceChecks(@Headers('x-jobs-token') token?: string) {
+    this.authorise(token);
+    return this.attendance.pushPresenceChecks();
+  }
+
   @Public()
   @Post('biometric-sync')
   @HttpCode(200)
